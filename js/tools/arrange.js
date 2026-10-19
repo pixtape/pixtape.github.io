@@ -173,10 +173,14 @@
       } else if (D.mode === 'rot') {
         let a = D.rot0 + (Math.atan2(p.y - L.y, p.x - L.x) - D.start) * 180 / Math.PI;
         a = ((a + 540) % 360) - 180;
-        // Shift (ya da "her zaman adım adım" açıksa Ctrl/Alt basılı değilken) açıyı ayarlanan adıma yuvarlar
+        // Shift (ya da "her zaman adım adım" açıksa Ctrl/Alt basılı değilken) açı, döndürmenin başladığı açıdan
+        // ayarlanan adım kadar ilerler: 7° olan nesne 15°'lik adımla 22°, 37°... olur (15°, 30° değil)
         const step = +App.prefs.rotStep || 15;
         const stepOn = App.prefs.rotSnap ? !(e.ctrlKey || e.metaKey || e.altKey) : shift;
-        if (stepOn) a = ((Math.round(a / step) * step + 540) % 360) - 180;
+        if (stepOn) {
+          const d = ((a - D.rot0 + 540) % 360) - 180;
+          a = ((D.rot0 + Math.round(d / step) * step + 540) % 360) - 180;
+        }
         else if (App.snapOn(e) && !App.prefs.free) for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(a - s) < 2) a = s;
         L.rot = a; D.moved = true;
       } else if (D.mode === 'scale') {

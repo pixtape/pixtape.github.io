@@ -36,6 +36,7 @@
     stageBg: 'auto',     // çalışma alanı rengi: 'auto' | 'dark' | 'gray' | 'light'
     uiScale: 100,        // arayüz ölçeği (%)
     motion: true,        // arayüz animasyonları (kapalıyken pencereler, menüler ve geçişler anında belirir)
+    fastPreview: false,  // kaydırıcı sürüklenirken önizlemeyi yarım çözünürlükte hesapla (bazı filtreler o sırada farklı görünür)
     exportFmt: 'auto',   // varsayılan kaydetme biçimi
     exportQ: 90,
     confirmClose: true,  // kaydedilmemiş sekmeyi kapatırken sor
@@ -1212,7 +1213,7 @@
       this.pending = false;
       this.lite = null; this.lastT = 0; this.fullT = 0;
     }
-    /* Kaydırıcı sürüklenirken (güncellemeler art arda gelirken) önizleme yarım çözünürlüklü vekilde hesaplanır,
+    /* Ayarlar > Performans'ta açıksa: kaydırıcı sürüklenirken (güncellemeler art arda gelirken) önizleme yarım çözünürlüklü vekilde hesaplanır,
        durunca kısa bir süre sonra tam vekilde yeniden hesaplanır. Görünen son sonuç ve Uygula etkilenmez. */
     liteProxy() {
       const p = this.proxy, side = Math.max(p.width, p.height);
@@ -1225,7 +1226,7 @@
       const now = performance.now(), quick = now - this.lastT < 220;
       this.lastT = now;
       clearTimeout(this.fullT);
-      const lite = quick ? this.liteProxy() : null;
+      const lite = quick && App.prefs.fastPreview ? this.liteProxy() : null;
       if (lite) this.fullT = setTimeout(() => { if (this.fn === fn) this.render(false); }, 180);
       this.render(!!lite);
     }

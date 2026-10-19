@@ -821,6 +821,9 @@
           field('Default Format', UI.seg({ options: [['auto', 'Automatic'], ['jpg', 'JPG'], ['png', 'PNG'], ['webp', 'WEBP']], value: P.exportFmt, onChange: v => set('exportFmt', v) }).el, 'Automatic: PNG if there is transparency, otherwise JPG'),
           field('Default Quality', UI.slider({ label: '', min: 40, max: 100, value: P.exportQ, def: 90, onChange: v => set('exportQ', v) }).el, 'For JPG and WEBP'),
         ]],
+        'Performance': ['speed', () => [
+          tg('fastPreview', 'Faster Live Preview', 'While you drag a slider, the preview is calculated at half resolution and sharpens when you stop. Faster on large photos, but some filters such as Neon Edges look different while dragging. The saved result is not affected.'),
+        ]],
         'Interface': ['panels', () => [
           field('Tool Panel', UI.seg({ options: [['left', 'Left'], ['right', 'Right']], value: App.layout.side('tool'), onChange: v => { if (v !== App.layout.side('tool')) App.layout.place('tool', v); } }).el, 'You can also move it by dragging the panel\'s title'),
           field('Layers Panel', UI.seg({ options: [['left', 'Left'], ['right', 'Right']], value: App.layout.side('layers'), onChange: v => { if (v !== App.layout.side('layers')) App.layout.place('layers', v); } }).el, 'Panels can also sit on the same side'),

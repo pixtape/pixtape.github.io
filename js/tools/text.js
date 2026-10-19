@@ -20,16 +20,24 @@
   ];
   const BOLD = new Set(['Montserrat', 'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Inter', 'Nunito', 'Raleway', 'Oswald', 'Rubik', 'Work Sans', 'Quicksand', 'Josefin Sans', 'Barlow', 'Kanit', 'Ubuntu', 'Exo 2', 'Comfortaa', 'Fredoka', 'Playfair Display', 'Merriweather', 'Lora', 'Cinzel', 'Cormorant Garamond', 'Libre Baskerville', 'EB Garamond', 'Bitter', 'Crimson Text', 'Dancing Script', 'Caveat', 'Kalam', 'Lobster Two', 'Merienda', 'Space Mono', 'Courier Prime', 'Source Code Pro']);
   const WEB_FONTS = WEB_GROUPS.flatMap(g => g[1]);
-  let webFontsRequested = false;
-  // Yazı tipleri bu siteden sunulur (fonts klasörü); tarayıcı her dosyayı yalnızca o yazı tipi kullanılınca indirir
+  let webFontsCss = null;
+  // Yazı tipleri bu siteden sunulur (fonts klasörü); tarayıcı her dosyayı yalnızca o yazı tipi kullanılınca indirir.
+  // Dönen söz, yazı tipi listesi (fonts.css) yüklenince çözülür.
   const loadWebFonts = () => {
-    if (webFontsRequested) return;
-    webFontsRequested = true;
+    if (webFontsCss) return webFontsCss;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'fonts/fonts.css';
+    webFontsCss = new Promise(res => { link.onload = link.onerror = () => res(); });
     document.head.appendChild(link);
+    return webFontsCss;
   };
+  /* Hazır stil düğmelerinin yazı tipleri araç açılınca arka planda indirilir. Bölüm ilk kez açıldığında düğmeler önce
+     düz yazıyla görünüp sonra değişiyordu; artık yazı tipleri hazır olana kadar düğmeler gizli bekler (en çok 2 sn). */
+  let presetFontsP = null;
+  const presetFonts = () => presetFontsP || (presetFontsP = loadWebFonts().then(() => Promise.all(PRESETS.map(([, pr]) =>
+    pr.font ? document.fonts.load(`${pr.italic ? 'italic ' : ''}${pr.bold ? 700 : 400} 16px "${pr.font}"`).catch(() => {}) : null)))
+    .then(() => { presetFontsP.done = true; }));
 
   /* Kullanıcının bilgisayarından yüklediği yazı tipleri (IndexedDB'de saklanır) */
   const FDB = 'pixtape-fonts';
@@ -311,26 +319,38 @@
     } else x.drawImage(G, 0, 0);
   }
 
-  /* Eğri metin: harfler yay üzerine tek tek döndürülerek dizilir. Satır düzeni aşağıda: ortak merkezli çemberler,
-     eğri miktarı 100 = en çok dönen satır tam çember. Hizalama yay üzerinde açıyla yapılır. */
+  /* Eğri metin: harfler yay üzerine tek tek döndürülerek dizilir. Satır düzeni aşağıda: aynı yarıçaplı, alt alta
+     çemberler; eğri miktarı 100 = en uzun satır tam çember. Hizalama yay üzerinde açıyla yapılır. */
   function renderCurved(L, t, rows, lh, sh) {
     const a = t.curve / 100, sgn = a > 0 ? 1 : -1, span = Math.abs(a) * 2 * Math.PI;
     const m = measurer;
     setSpacing(m, 0);
+    /* Harflerin yeri düz metindeki gibi harf çifti aralığı (kerning) dahil ölçülür: harfin sonu, başından o harfe kadar
+       olan yazının genişliğidir. Harfler tek tek ölçülünce "Te" gibi sıkışık çiftler açılıyor, kelime uzuyor ve
+       eğri verilince ilk harf yana kayıyordu. c: harfin satır başından ortasına uzaklığı. */
     const lines = rows.map(r => {
       const gl = [];
+      let base = 0, k = 0;
       for (const s of r.segs) {
         m.font = s.font;
-        for (const ch of s.chars) gl.push({ ch, seg: s, w: m.measureText(ch).width + t.spacing });
+        let acc = '', end = 0;
+        for (const ch of s.chars) {
+          acc += ch;
+          const adv = m.measureText(ch).width;
+          end = m.measureText(acc).width;
+          gl.push({ ch, seg: s, w: adv + t.spacing, c: base + end - adv / 2 + t.spacing * (k + 0.5) });
+          k++;
+        }
+        base += end;
       }
-      return { gl, total: gl.reduce((p, q) => p + q.w, 0) };
+      return { gl, total: base + t.spacing * k };
     });
-    /* Satırlar ortak merkezli çemberlerde: aralarındaki boşluk yay boyunca hep aynı kalır (uçlarda birbirine binmez).
-       Kemerde alttaki satır, gülümsemede üstteki satır daha küçük çembere düşer. Dış yarıçap, en çok dönecek satır
-       eğri miktarı kadar dönecek şekilde seçilir: hiçbir satır ayarlanandan fazla kıvrılmaz (eskiden yarıçap yalnızca
-       en uzun satıra göre seçildiği için küçük çembere düşen uzun satır aşırı dönüyordu). */
-    const R0 = Math.max(...lines.map((q, i) => Math.max(q.total / span + t.size * 0.5, t.size * 0.8) + sgn * i * lh));
-    lines.forEach((q, i) => { q.R = R0 - sgn * i * lh; q.half = q.total / 2 / q.R; });
+    /* Bütün satırlar aynı yarıçaplı çemberlerde, çemberler satır aralığı kadar alt alta: her satır aynı miktarda
+       kıvrılır ve hizalama düz metindeki gibi kalır. (Eskiden ortak merkezli çemberler kullanılıyordu; küçük çembere
+       düşen satır daha çok kıvrılıyor, sağa / sola dayalı kısa satır ortaya doğru kayıyordu.) Yarıçap, en uzun satır
+       eğri miktarı kadar dönecek şekilde seçilir. */
+    const R0 = Math.max(...lines.map(q => Math.max(q.total / span + t.size * 0.5, t.size * 0.8)));
+    lines.forEach(q => { q.R = R0; q.half = q.total / 2 / q.R; });
     // Hizalama yay üzerinde açıyla yapılır: sola dayalı satırlar en çok dönen satırın başladığı açıdan başlar,
     // sağa dayalılar onun bittiği açıda biter (yol üzerindeki metin gibi)
     const halfMax = Math.max(0, ...lines.map(q => q.half));
@@ -342,24 +362,27 @@
     const center = q => ({ x: q.cx, y: q.apex + sgn * q.R });
     const glyphs = [];
     for (const q of lines) {
-      let pos = 0;
       const o = center(q);
       for (const g of q.gl) {
-        const th = q.a0 + (pos + g.w / 2) / q.R;
-        g.th = th; g.t0 = q.a0 + pos / q.R; g.t1 = q.a0 + (pos + g.w) / q.R; g.px = o.x + q.R * Math.sin(th); g.py = o.y - sgn * q.R * Math.cos(th);
+        const th = q.a0 + g.c / q.R;
+        g.th = th; g.t0 = q.a0 + (g.c - g.w / 2) / q.R; g.t1 = q.a0 + (g.c + g.w / 2) / q.R; g.px = o.x + q.R * Math.sin(th); g.py = o.y - sgn * q.R * Math.cos(th);
         glyphs.push(g);
-        pos += g.w;
       }
     }
     const sw = t.stroke.on ? t.stroke.w : 0;
     const [bpx, bpy] = bgPads(t);
-    // sınırlar: harflerin çevresi (kontur, gölge payıyla) ve arka plan kutusunun kendisi
-    const P = Math.ceil(sw + t.size * 0.95 + shadowExtent(sh));
+    /* Sınırlar: her harfin döndürülmüş kutusunun köşeleri, düz metindeki payla (kontur, gölge). Eskiden her harfin
+       çevresine yazı boyu kadar pay bırakıldığı için az bir eğri verilince bile seçim kutusu birden büyüyordu. */
+    const P = Math.ceil(sw + t.size * 0.25 + shadowExtent(sh));
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     const add = (px, py, m) => { x0 = Math.min(x0, px - m); x1 = Math.max(x1, px + m); y0 = Math.min(y0, py - m); y1 = Math.max(y1, py + m); };
-    for (const g of glyphs) add(g.px, g.py, t.size * 0.5);
+    const corners = (g, hy, m) => {
+      const co = Math.cos(sgn * g.th), si = Math.sin(sgn * g.th), hx = Math.max(g.w, 1) / 2;
+      for (const [u, v] of [[-hx, -hy], [hx, -hy], [hx, hy], [-hx, hy]]) add(g.px + u * co - v * si, g.py + u * si + v * co, m);
+    };
+    for (const g of glyphs) corners(g, t.size * 0.5, 0);
     const gb = { x0, y0, x1, y1 }; // degradenin yayılacağı alan: harflerin kapladığı kutu
-    for (const g of glyphs) add(g.px, g.py, P);
+    for (const g of glyphs) corners(g, lh / 2, P);
     if (t.bg.on) for (const [q, r, a, b, m] of curvedBgArcs(t, lines, bpx, bpy)) {
       const o = center(q), n = Math.max(2, Math.ceil(Math.abs(b - a) / 0.05));
       for (let k = 0; k <= n; k++) { const th = a + (b - a) * k / n; add(o.x + r * Math.sin(th), o.y - sgn * r * Math.cos(th), m + 2); }
@@ -474,7 +497,7 @@
        Köşe yuvarlaklığı için şekil önce yuvarlaklık kadar içeriden çizilir, sonra o kalınlıkta yuvarlak birleşimli
        konturla dışa doğru büyütülür; yuvarlaklık kutunun yarı yüksekliğinden büyük olamaz (tam yuvarlak uç). */
     const box = (top, bot, a0, a1) => {
-      const half = (Math.abs(top.R - bot.R) + gh) / 2 + bpy;
+      const half = (Math.abs(bot.apex - top.apex) + gh) / 2 + bpy;
       const ri = Math.min(rr, half), py = bpy - ri;
       const mg = (bpx - ri + t.size * 0.1) / Math.min(top.R, bot.R), mid = (a0 + a1) / 2;
       const b0 = Math.min(mid, a0 - mg), b1 = Math.max(mid, a1 + mg);
@@ -632,7 +655,7 @@
     id: 'text', name: 'Text', icon: 'text', key: 'T', cursor: 'text',
     edit: null, bar: null, pendingEdit: null,
 
-    activate() { loadWebFonts(); },
+    activate() { loadWebFonts(); presetFonts(); },
     deactivate() { T.finishEdit(); App.xform.drag = null; },
     cur() { const L = App.activeLayer(); return L && L.type === 'text' ? L : null; },
 
@@ -971,7 +994,9 @@
       });
       ta.addEventListener('keydown', e => e.stopPropagation());
       // paneldeki kutuda seçilen bölüme de stil verilebilir
-      const panelSel = () => { T.lastSel = { L, s: ta.selectionStart, e: ta.selectionEnd, v: t.value }; T.syncStyle(); };
+      // Kutu odakta değilken gelen olaylar sayılmaz: tarayıcı, kutu odağını kaybederken de "select" gönderiyor; boş bir
+      // yere tıklanıp seçim unutulduktan hemen sonra seçim geri geliyor ve "seçili bölüme uygulanır" uyarısı kalıyordu
+      const panelSel = () => { if (document.activeElement !== ta) return; T.lastSel = { L, s: ta.selectionStart, e: ta.selectionEnd, v: t.value }; T.syncStyle(); };
       for (const ev of ['select', 'keyup', 'mouseup']) ta.addEventListener(ev, panelSel);
       body.appendChild(UI.section('Text', [ta, UI.note('Tip: double-click text on the canvas to type directly.')]));
 
@@ -988,12 +1013,17 @@
           ensureFont(); render(L); App.commit(Object.keys(pr).length ? 'Text Style' : 'Back to Default Style'); UI.rebuildPanel();
       };
       const resetBtn = h('button', { class: 'icon-btn sm sec-act', title: 'Back to Default Style', html: App.icon('reset', 15), onclick: e => { e.preventDefault(); e.stopPropagation(); applyPreset({}); } });
-      body.appendChild(UI.section('Preset Styles', [h('div', { class: 'preset-grid' }, PRESETS.map(([name, pr]) => {
+      const pGrid = h('div', { class: 'preset-grid' + (presetFonts().done ? '' : ' wait') }, PRESETS.map(([name, pr]) => {
         const b = h('button', { class: 'preset-btn', onclick: () => applyPreset(pr) });
         b.textContent = name;
         b.style.fontFamily = `"${pr.font || pickFont('Segoe UI')}", sans-serif`;
         return b;
-      }))], { open: false, extra: resetBtn }));
+      }));
+      if (!presetFonts().done) {
+        const show = () => pGrid.classList.remove('wait');
+        presetFonts().then(show); setTimeout(show, 2000);
+      }
+      body.appendChild(UI.section('Preset Styles', [pGrid], { open: false, extra: resetBtn }));
 
       // Yazı tipi: üzerine gelince önizleme, tıklayınca seçim
       // Yazı tipi, kalın / italik / altı çizili ve renk: metinde bir bölüm seçiliyse yalnızca o bölüme uygulanır
@@ -1027,6 +1057,8 @@
       });
       const scope = h('p', { class: 'note txt-scope' }, 'Applies to the selected part of the text.');
       const align = UI.seg({ options: [['left', 'Left', 'alignL'], ['center', 'Center', 'alignCH'], ['right', 'Right', 'alignR']], iconOnly: true, value: t.align, onChange: v => { t.align = v; upd(); } });
+      // hizalama metnin tamamına uygulanır; düğmeye basmak metin kutusundaki seçimi kaldırmasın (uyarı da seçimle tutarlı kalır)
+      align.el.addEventListener('mousedown', e => e.preventDefault());
       T.sizeSl = UI.slider({ label: 'Size', min: 6, max: Math.max(400, Math.round(t.size * 1.5)), value: Math.round(t.size), onInput: v => { scaleProps(L, v / t.size); rerender(L); App.requestRender(); T.place(); }, onChange: () => upd('Size', true) });
       body.appendChild(UI.section('Font', [
         scope,
@@ -1148,6 +1180,7 @@
   function tg(label, title, val, on, css) {
     const b = h('button', { class: 'seg-btn' + (val ? ' on' : ''), title, style: css, 'data-noi18n': '' });
     b.textContent = label;
+    b.onmousedown = e => e.preventDefault(); // metindeki seçim kaybolmasın
     b.onclick = () => { val = !val; b.classList.toggle('on', val); on(val); };
     return b;
   }

@@ -792,14 +792,17 @@
   IMG.mirror = (src, mode) => {
     const w = src.width, h = src.height;
     const out = U.clone(src);
+    /* Yarılar tam piksel sınırlarında kopyalanır: kırpma yolu w/2 gibi yarım piksele denk gelince
+       ortadaki sütun yarı saydam kalıyordu. Tek sayılı boyutta tam ortadaki sütun olduğu gibi durur. */
+    const hw = Math.floor(w / 2), hh = Math.floor(h / 2);
     const step = (c, m) => {
       const r = U.clone(c), o = r.getContext('2d');
-      o.save(); o.beginPath();
-      if (m === 'left') { o.rect(w / 2, 0, w / 2, h); o.clip(); o.clearRect(0, 0, w, h); o.translate(w, 0); o.scale(-1, 1); }
-      if (m === 'right') { o.rect(0, 0, w / 2, h); o.clip(); o.clearRect(0, 0, w, h); o.translate(w, 0); o.scale(-1, 1); }
-      if (m === 'top') { o.rect(0, h / 2, w, h / 2); o.clip(); o.clearRect(0, 0, w, h); o.translate(0, h); o.scale(1, -1); }
-      if (m === 'bottom') { o.rect(0, 0, w, h / 2); o.clip(); o.clearRect(0, 0, w, h); o.translate(0, h); o.scale(1, -1); }
-      o.drawImage(c, 0, 0);
+      o.save();
+      o.imageSmoothingEnabled = false;
+      if (m === 'left') { o.clearRect(w - hw, 0, hw, h); o.translate(w, 0); o.scale(-1, 1); o.drawImage(c, 0, 0, hw, h, 0, 0, hw, h); }
+      if (m === 'right') { o.clearRect(0, 0, hw, h); o.translate(w, 0); o.scale(-1, 1); o.drawImage(c, w - hw, 0, hw, h, w - hw, 0, hw, h); }
+      if (m === 'top') { o.clearRect(0, h - hh, w, hh); o.translate(0, h); o.scale(1, -1); o.drawImage(c, 0, 0, w, hh, 0, 0, w, hh); }
+      if (m === 'bottom') { o.clearRect(0, 0, w, hh); o.translate(0, h); o.scale(1, -1); o.drawImage(c, 0, h - hh, w, hh, 0, h - hh, w, hh); }
       o.restore();
       return r;
     };
