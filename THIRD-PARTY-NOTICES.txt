@@ -1,0 +1,425 @@
+Pixtape - Third-party notices
+============================
+
+Pixtape is free software, licensed under the GNU Affero General Public
+License v3.0 (see LICENSE). It uses the following third-party components,
+each under its own license.
+
+------------------------------------------------------------------------
+1. Feather Icons (some interface icons are adapted from this set)
+   https://github.com/feathericons/feather
+------------------------------------------------------------------------
+The MIT License (MIT)
+
+Copyright (c) 2013-2017 Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------------------
+2. Lucide (some interface icons are adapted from this set)
+   https://github.com/lucide-icons/lucide
+------------------------------------------------------------------------
+ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part
+of Feather (MIT). All other copyright (c) for Lucide are held by Lucide
+Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+------------------------------------------------------------------------
+3. @imgly/background-removal (AI background removal)
+   https://github.com/imgly/background-removal-js
+------------------------------------------------------------------------
+License: GNU Affero General Public License v3.0 (AGPL-3.0), the same license
+as Pixtape. Full text: LICENSE in this repository.
+Not included in this repository. The library and its model are downloaded
+from a public package mirror the first time AI background removal is used;
+the photo itself is processed in the browser and never uploaded. The library
+in turn loads ONNX Runtime Web (MIT License,
+https://github.com/microsoft/onnxruntime).
+
+------------------------------------------------------------------------
+4. Fonts (folder "fonts")
+------------------------------------------------------------------------
+The Text tool offers the fonts below. They are the original font files as
+released by their authors, redistributed unmodified under the license of
+their authors. The full license text of each font is in its folder.
+Under these licenses the fonts may be used freely in your images, including
+commercial work.
+
+- Montserrat: SIL Open Font License 1.1
+    Copyright 2024 The Montserrat.Git Project Authors (https://github.com/JulietaUla/Montserrat.git)
+    fonts/montserrat/LICENSE.txt
+- Poppins: SIL Open Font License 1.1
+    Copyright 2020 The Poppins Project Authors (https://github.com/itfoundry/Poppins)
+    fonts/poppins/LICENSE.txt
+- Roboto: SIL Open Font License 1.1
+    Copyright 2011 The Roboto Project Authors (https://github.com/googlefonts/roboto-classic)
+    fonts/roboto/LICENSE.txt
+- Open Sans: SIL Open Font License 1.1
+    Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)
+    fonts/open-sans/LICENSE.txt
+- Lato: SIL Open Font License 1.1
+    Copyright (c) 2010-2014 by tyPoland Lukasz Dziedzic (team@latofonts.com) with Reserved Font Name "Lato"
+    fonts/lato/LICENSE.txt
+- Inter: SIL Open Font License 1.1
+    Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+    fonts/inter/LICENSE.txt
+- Nunito: SIL Open Font License 1.1
+    Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
+    fonts/nunito/LICENSE.txt
+- Raleway: SIL Open Font License 1.1
+    Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name "Raleway".
+    fonts/raleway/LICENSE.txt
+- Oswald: SIL Open Font License 1.1
+    Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
+    fonts/oswald/LICENSE.txt
+- Rubik: SIL Open Font License 1.1
+    Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik)
+    fonts/rubik/LICENSE.txt
+- Work Sans: SIL Open Font License 1.1
+    Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans)
+    fonts/work-sans/LICENSE.txt
+- Quicksand: SIL Open Font License 1.1
+    Copyright 2011 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily), with Reserved Font Name “Quicksand”.
+    fonts/quicksand/LICENSE.txt
+- Josefin Sans: SIL Open Font License 1.1
+    Copyright 2010 The Josefin Sans Project Authors (https://github.com/ThomasJockin/JosefinSansFont-master), with Reserved Font Name "Josefin Sans".
+    fonts/josefin-sans/LICENSE.txt
+- Barlow: SIL Open Font License 1.1
+    Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+    fonts/barlow/LICENSE.txt
+- Kanit: SIL Open Font License 1.1
+    Copyright 2020 The Kanit Project Authors (https://github.com/cadsondemak/kanit)
+    fonts/kanit/LICENSE.txt
+- Ubuntu: Ubuntu Font Licence 1.0
+    fonts/ubuntu/LICENSE.txt
+- Exo 2: SIL Open Font License 1.1
+    Copyright 2013 The Exo 2 Project Authors (https://github.com/googlefonts/Exo-2.0)
+    fonts/exo-2/LICENSE.txt
+- Comfortaa: SIL Open Font License 1.1
+    Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfortaa), with Reserved Font Name "Comfortaa".
+    fonts/comfortaa/LICENSE.txt
+- Fredoka: SIL Open Font License 1.1
+    Copyright 2016 The Fredoka Project Authors (https://github.com/hafontia/Fredoka-One)
+    fonts/fredoka/LICENSE.txt
+- Archivo Black: SIL Open Font License 1.1
+    Copyright 2017 The Archivo Black Project Authors (https://github.com/Omnibus-Type/ArchivoBlack)
+    fonts/archivo-black/LICENSE.txt
+- Bebas Neue: SIL Open Font License 1.1
+    Copyright © 2010 by Dharma Type.
+    fonts/bebas-neue/LICENSE.txt
+- Anton: SIL Open Font License 1.1
+    Copyright 2020 The Anton Project Authors (https://github.com/googlefonts/AntonFont.git)
+    fonts/anton/LICENSE.txt
+- Righteous: SIL Open Font License 1.1
+    Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI)
+    fonts/righteous/LICENSE.txt
+- Bangers: SIL Open Font License 1.1
+    Copyright 2010 The Bangers Project Authors (https://github.com/googlefonts/bangers)
+    fonts/bangers/LICENSE.txt
+- Abril Fatface: SIL Open Font License 1.1
+    Copyright (c) 2011, TypeTogether (www.type-together.com),
+    fonts/abril-fatface/LICENSE.txt
+- Alfa Slab One: SIL Open Font License 1.1
+    Copyright 2016 The Alfa Slab One Project Authors (http://www.jmsole.cl | info@jmsole.cl), with Reserved Font Name "Alfa Slab".
+    fonts/alfa-slab-one/LICENSE.txt
+- Bungee: SIL Open Font License 1.1
+    Copyright 2023 The Bungee Project Authors (https://github.com/djrrb/Bungee)
+    fonts/bungee/LICENSE.txt
+- Bungee Shade: SIL Open Font License 1.1
+    Copyright 2023 The Bungee Project Authors (https://github.com/djrrb/Bungee)
+    fonts/bungee-shade/LICENSE.txt
+- Lobster: SIL Open Font License 1.1
+    Copyright 2010 The Lobster Project Authors (https://github.com/impallari/The-Lobster-Font), with Reserved Font Name "Lobster".
+    fonts/lobster/LICENSE.txt
+- Monoton: SIL Open Font License 1.1
+    Copyright (c) 2011 by vernon adams (vern@newtypography.co.uk),
+    fonts/monoton/LICENSE.txt
+- Rubik Mono One: SIL Open Font License 1.1
+    Copyright 2015 The Rubik Project Authors (mail@hubertfischer.com)
+    fonts/rubik-mono-one/LICENSE.txt
+- Press Start 2P: SIL Open Font License 1.1
+    Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), with Reserved Font Name "Press Start 2P".
+    fonts/press-start-2p/LICENSE.txt
+- Russo One: SIL Open Font License 1.1
+    Copyright (c) 2011-2012, Jovanny Lemonad (jovanny.ru), with Reserved Font Name "Russo"
+    fonts/russo-one/LICENSE.txt
+- Black Ops One: SIL Open Font License 1.1
+    Copyright 2022 The Black-Ops Project Authors (https://github.com/googlefonts/googlefonts-project-template)
+    fonts/black-ops-one/LICENSE.txt
+- Titan One: SIL Open Font License 1.1
+    Copyright (c) 2011, Rodrigo Fuenzalida (www.rfuenzalida.com|hello@rfuenzalida.com),
+    fonts/titan-one/LICENSE.txt
+- Luckiest Guy: Apache License 2.0
+    fonts/luckiest-guy/LICENSE.txt
+- Passion One: SIL Open Font License 1.1
+    Copyright (c) 2011 Fontstage (info@fontstage.com), with Reserved Font Names, 'Passion'
+    fonts/passion-one/LICENSE.txt
+- Staatliches: SIL Open Font License 1.1
+    Copyright 2018 The Staatliches Authors (https://github.com/googlefonts/staatliches)
+    fonts/staatliches/LICENSE.txt
+- Ultra: Apache License 2.0
+    fonts/ultra/LICENSE.txt
+- Creepster: SIL Open Font License 1.1
+    Copyright (c) 2011, Font Diner, Inc (diner@fontdiner.com),
+    fonts/creepster/LICENSE.txt
+- Shrikhand: SIL Open Font License 1.1
+    Copyright (c) 2015 Jonny Pinhorn (jonpinhorn.typedesign@gmail.com)
+    fonts/shrikhand/LICENSE.txt
+- Chewy: Apache License 2.0
+    fonts/chewy/LICENSE.txt
+- Fugaz One: SIL Open Font License 1.1
+    Copyright (c) 2011 by LatinoType Limitada (luciano@latinotype.com),
+    fonts/fugaz-one/LICENSE.txt
+- Bowlby One SC: SIL Open Font License 1.1
+    Copyright (c) 2011 by vernon adams (vern@newtypography.co.uk),
+    fonts/bowlby-one-sc/LICENSE.txt
+- Faster One: SIL Open Font License 1.1
+    Copyright 2012 The Faster Project Authors (https://github.com/etunni/faster), with Reserved Font Name 'Faster'
+    fonts/faster-one/LICENSE.txt
+- Playfair Display: SIL Open Font License 1.1
+    Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name "Playfair Display"
+    fonts/playfair-display/LICENSE.txt
+- Merriweather: SIL Open Font License 1.1
+    Copyright 2020 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name "Merriweather".
+    fonts/merriweather/LICENSE.txt
+- Lora: SIL Open Font License 1.1
+    Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name "Lora".
+    fonts/lora/LICENSE.txt
+- Cinzel: SIL Open Font License 1.1
+    Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)
+    fonts/cinzel/LICENSE.txt
+- Cormorant Garamond: SIL Open Font License 1.1
+    Copyright 2015 the Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)
+    fonts/cormorant-garamond/LICENSE.txt
+- Libre Baskerville: SIL Open Font License 1.1
+    Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville) with Reserved Font Name Libre Baskerville.
+    fonts/libre-baskerville/LICENSE.txt
+- EB Garamond: SIL Open Font License 1.1
+    Copyright 2017 The EB Garamond Project Authors (https://github.com/octaviopardo/EBGaramond12)
+    fonts/eb-garamond/LICENSE.txt
+- DM Serif Display: SIL Open Font License 1.1
+    Copyright 2014-2018 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries. Copyright 2019 Google LLC.
+    fonts/dm-serif-display/LICENSE.txt
+- Bitter: SIL Open Font License 1.1
+    Copyright 2011 The Bitter Project Authors (https://github.com/solmatas/BitterPro)
+    fonts/bitter/LICENSE.txt
+- Crimson Text: SIL Open Font License 1.1
+    Copyright 2010 The Crimson Text Project Authors (https://github.com/googlefonts/Crimson)
+    fonts/crimson-text/LICENSE.txt
+- Prata: SIL Open Font License 1.1
+    Copyright 2011 The Prata Project Authors (https://github.com/cyrealtype/Prata)
+    fonts/prata/LICENSE.txt
+- Yeseva One: SIL Open Font License 1.1
+    Copyright 2012 The Yeseva One Project Authors (lemonad@jovanny.ru), with Reserved Font Name "Yeseva".
+    fonts/yeseva-one/LICENSE.txt
+- Pacifico: SIL Open Font License 1.1
+    Copyright 2018 The Pacifico Project Authors (https://github.com/googlefonts/Pacifico)
+    fonts/pacifico/LICENSE.txt
+- Dancing Script: SIL Open Font License 1.1
+    Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name 'Dancing Script'.
+    fonts/dancing-script/LICENSE.txt
+- Great Vibes: SIL Open Font License 1.1
+    Copyright 2015 The Great Vibes Pro Project Authors (https://github.com/googlefonts/great-vibes)
+    fonts/great-vibes/LICENSE.txt
+- Satisfy: Apache License 2.0
+    fonts/satisfy/LICENSE.txt
+- Sacramento: SIL Open Font License 1.1
+    Copyright (c) 2012, Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved Font Names 'Sacramento'
+    fonts/sacramento/LICENSE.txt
+- Caveat: SIL Open Font License 1.1
+    Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)
+    fonts/caveat/LICENSE.txt
+- Kalam: SIL Open Font License 1.1
+    Copyright (c) 2014, Indian Type Foundry (info@indiantypefoundry.com).
+    fonts/kalam/LICENSE.txt
+- Permanent Marker: Apache License 2.0
+    fonts/permanent-marker/LICENSE.txt
+- Shadows Into Light: SIL Open Font License 1.1
+    Copyright (c) 2010, Kimberly Geswein (kimberlygeswein.com)
+    fonts/shadows-into-light/LICENSE.txt
+- Amatic SC: SIL Open Font License 1.1
+    Copyright 2015 The Amatic SC Project Authors (https://github.com/googlefonts/AmaticSC)
+    fonts/amatic-sc/LICENSE.txt
+- Lobster Two: SIL Open Font License 1.1
+    Copyright (c) 2011, Pablo Impallari (www.impallari.com|impallari@gmail.com),
+    fonts/lobster-two/LICENSE.txt
+- Courgette: SIL Open Font License 1.1
+    Copyright (c) 2012 by Sorkin Type Co (www.sorkintype.com), with Reserved Font Name "Courgette".
+    fonts/courgette/LICENSE.txt
+- Kaushan Script: SIL Open Font License 1.1
+    Copyright (c) 2011, Pablo Impallari (www.impallari.com|impallari@gmail.com),
+    fonts/kaushan-script/LICENSE.txt
+- Parisienne: SIL Open Font License 1.1
+    Copyright (c) 2012 by Brian J. Bonislawsky DBA Astigmatic (AOETI)
+    fonts/parisienne/LICENSE.txt
+- Allura: SIL Open Font License 1.1
+    Copyright 2010 The Allura Project Authors (https://github.com/googlefonts/allura)
+    fonts/allura/LICENSE.txt
+- Alex Brush: SIL Open Font License 1.1
+    Copyright 2011 The Alex Brush Project Authors (https://github.com/googlefonts/alex-brush)
+    fonts/alex-brush/LICENSE.txt
+- Cookie: SIL Open Font License 1.1
+    Copyright (c) 2011 by Ania Kruk (hello@aniakruk.com),
+    fonts/cookie/LICENSE.txt
+- Yellowtail: Apache License 2.0
+    fonts/yellowtail/LICENSE.txt
+- Tangerine: SIL Open Font License 1.1
+    Copyright (c) 2010, Toshi Omagari (tosche@mac.com)
+    fonts/tangerine/LICENSE.txt
+- Pinyon Script: SIL Open Font License 1.1
+    Copyright 2024 The Pinyon Project Authors (https://github.com/SorkinType/Pinyon)
+    fonts/pinyon-script/LICENSE.txt
+- Mr Dafoe: SIL Open Font License 1.1
+    Copyright (c) 2011 Alejandro Paul (sudtipos@sudtipos.com),
+    fonts/mr-dafoe/LICENSE.txt
+- Marck Script: SIL Open Font License 1.1
+    Copyright (c) 2011, Denis Masharov <denis.masharov@gmail.com> & Marck Fogel,
+    fonts/marck-script/LICENSE.txt
+- Rock Salt: Apache License 2.0
+    fonts/rock-salt/LICENSE.txt
+- Indie Flower: SIL Open Font License 1.1
+    Copyright 2010 The Indie Flower Authors (kimberlygeswein.com),
+    fonts/indie-flower/LICENSE.txt
+- Gloria Hallelujah: SIL Open Font License 1.1
+    Copyright (c) 2010, Kimberly Geswein (kimberlygeswein.com)
+    fonts/gloria-hallelujah/LICENSE.txt
+- Patrick Hand: SIL Open Font License 1.1
+    Copyright (c) 2010-2012 Patrick Wagesreiter (mail@patrickwagesreiter.at)
+    fonts/patrick-hand/LICENSE.txt
+- Handlee: SIL Open Font License 1.1
+    Copyright (c) 2011, Joe Prince, Vissol Ltd. (http://www.vissol.co.uk/mavenpro/)
+    fonts/handlee/LICENSE.txt
+- Homemade Apple: Apache License 2.0
+    fonts/homemade-apple/LICENSE.txt
+- Leckerli One: SIL Open Font License 1.1
+    Copyright (c) 2011 Gesine Todt  (www.gesine-todt.de), with Reserved
+    fonts/leckerli-one/LICENSE.txt
+- Damion: SIL Open Font License 1.1
+    Copyright 2014 The Damion Project Authors (https://github.com/googlefonts/damionFont)
+    fonts/damion/LICENSE.txt
+- Niconne: SIL Open Font License 1.1
+    Copyright (c) 2011, Vernon Adams (vern@newtypography.co.uk),
+    fonts/niconne/LICENSE.txt
+- Berkshire Swash: SIL Open Font License 1.1
+    Copyright (c) 2012 by Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved Font Names "Berkshire Swash"
+    fonts/berkshire-swash/LICENSE.txt
+- Merienda: SIL Open Font License 1.1
+    Copyright 2017 The Merienda Project Authors (https://github.com/etunni/merienda)
+    fonts/merienda/LICENSE.txt
+- Style Script: SIL Open Font License 1.1
+    Copyright 2013 The Style Script Project Authors (https://github.com/googlefonts/style-script)
+    fonts/style-script/LICENSE.txt
+- Playball: SIL Open Font License 1.1
+    Copyright 2011 The Playball Project Authors (https://github.com/googlefonts/play-ball)
+    fonts/playball/LICENSE.txt
+- Italianno: SIL Open Font License 1.1
+    Copyright 2009 The Italianno Project Authors (https://github.com/googlefonts/italianno)
+    fonts/italianno/LICENSE.txt
+- Bad Script: SIL Open Font License 1.1
+    Copyright 2011 The Bad Script Project Authors (https://github.com/alexeiva/badscript)
+    fonts/bad-script/LICENSE.txt
+- Mrs Saint Delafield: SIL Open Font License 1.1
+    Copyright (c) 2011 Alejandro Paul (sudtipos@sudtipos.com),
+    fonts/mrs-saint-delafield/LICENSE.txt
+- Ms Madi: SIL Open Font License 1.1
+    Copyright 2018 The Ms Madi Project Authors (https://github.com/googlefonts/ms-madi)
+    fonts/ms-madi/LICENSE.txt
+- Birthstone: SIL Open Font License 1.1
+    Copyright 2019 The Birthstone Project Authors (https://github.com/googlefonts/birthstone)
+    fonts/birthstone/LICENSE.txt
+- Emilys Candy: SIL Open Font License 1.1
+    Copyright (c) 2012, Font Diner (www.fontdiner.com),
+    fonts/emilys-candy/LICENSE.txt
+- Mystery Quest: SIL Open Font License 1.1
+    Copyright (c) 2012, Font Diner (www.fontdiner.com),
+    fonts/mystery-quest/LICENSE.txt
+- Spirax: SIL Open Font License 1.1
+    Copyright (c) 2011 by Brenda Gallo (gbrenda1987@gmail.com),
+    fonts/spirax/LICENSE.txt
+- Henny Penny: SIL Open Font License 1.1
+    Copyright (c) 2011, BrownFox (gayaneh.b@gmail.com|www.brownfox.org),
+    fonts/henny-penny/LICENSE.txt
+- Mountains of Christmas: Apache License 2.0
+    fonts/mountains-of-christmas/LICENSE.txt
+- Princess Sofia: SIL Open Font License 1.1
+    Copyright (c) 2011, Font Diner (www.fontdiner.com),
+    fonts/princess-sofia/LICENSE.txt
+- Elsie: SIL Open Font License 1.1
+    Copyright (c) 2010-2012, Alejandro Inler (alejandroinler@gmail.com), with Reserved Font Name 'Elsie'
+    fonts/elsie/LICENSE.txt
+- Fondamento: SIL Open Font License 1.1
+    Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI)
+    fonts/fondamento/LICENSE.txt
+- Cherry Swash: SIL Open Font License 1.1
+    Copyright (c) 2012, Natalia Kasatkina (kasatkinanataliya@gmail.com)
+    fonts/cherry-swash/LICENSE.txt
+- Delius Swash Caps: SIL Open Font License 1.1
+    Copyright (c) 2010, 2011, Natalia Raices,
+    fonts/delius-swash-caps/LICENSE.txt
+- Sniglet: SIL Open Font License 1.1
+    Copyright (c) 2008, Haley Fiege (haley@kingdomofawesome.com), Copyright (c) 2012, Brenda Gallo (gbrenda1987@gmail.com), Copyright (c) 2013, Pablo Impallari (www.impallari.com|impallari@gmail.com)
+    fonts/sniglet/LICENSE.txt
+- Margarine: SIL Open Font License 1.1
+    Copyright (c) 2012 by Brian J. Bonislawsky DBA Astigmatic (AOETI)
+    fonts/margarine/LICENSE.txt
+- Grand Hotel: SIL Open Font License 1.1
+    Copyright (c) 2012 by Brian J. Bonislawsky and Jim Lyles DBA Astigmatic
+    fonts/grand-hotel/LICENSE.txt
+- Sail: SIL Open Font License 1.1
+    Copyright (c) 2011 by LatinoType Limitada (luciano@latinotype.com),
+    fonts/sail/LICENSE.txt
+- Lemon: SIL Open Font License 1.1
+    Copyright 2011 The Lemon Project Authors (https://github.com/etunni/lemon) with Reserved Font Name "Lemon"
+    fonts/lemon/LICENSE.txt
+- Ribeye: SIL Open Font License 1.1
+    Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI)
+    fonts/ribeye/LICENSE.txt
+- Oleo Script: SIL Open Font License 1.1
+    Copyright (c) 2012, Soytutype (contact@soytutype.com.ar|soytutype@gmail.com), with Reserved Font Name "Oleo Script"
+    fonts/oleo-script/LICENSE.txt
+- Galada: SIL Open Font License 1.1
+    Copyright 2015 Jeremie Hornus, Yoann Minet, Juan Bruce Copyright (c) 2010, Pablo Impallari (www.impallari.com|impallari@gmail.com). Copyright (c) 2010, 2011, Alexei Vanyashin (www.cyreal.org|a@cyreal.org), with Reserved Font Name Lobster.
+    fonts/galada/LICENSE.txt
+- Fontdiner Swanky: Apache License 2.0
+    fonts/fontdiner-swanky/LICENSE.txt
+- Sancreek: SIL Open Font License 1.1
+    Copyright 2011 The Sancreek Project Authors (https://github.com/googlefonts/sancreek)
+    fonts/sancreek/LICENSE.txt
+- Space Mono: SIL Open Font License 1.1
+    Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono)
+    fonts/space-mono/LICENSE.txt
+- Courier Prime: SIL Open Font License 1.1
+    Copyright 2015 The Courier Prime Project Authors (https://github.com/quoteunquoteapps/CourierPrime).
+    fonts/courier-prime/LICENSE.txt
+- Source Code Pro: SIL Open Font License 1.1
+    Copyright 2010, 2012 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe Systems Incorporated in the United States and/or other countries.
+    fonts/source-code-pro/LICENSE.txt

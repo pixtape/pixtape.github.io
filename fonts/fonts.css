@@ -1,0 +1,131 @@
+/* Fonts of the Text tool: original files from their authors, unmodified. License files are in each font folder. */
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:100 900;font-display:swap;src:url(montserrat/Montserrat%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:swap;src:url(poppins/Poppins-Regular.ttf) format('truetype');}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url(poppins/Poppins-Bold.ttf) format('truetype');}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100 900;font-display:swap;src:url(roboto/Roboto%5Bwdth%2Cwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Open Sans';font-style:normal;font-weight:300 800;font-display:swap;src:url(open-sans/OpenSans%5Bwdth%2Cwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Lato';font-style:normal;font-weight:400;font-display:swap;src:url(lato/Lato-Regular.ttf) format('truetype');}
+@font-face{font-family:'Lato';font-style:normal;font-weight:700;font-display:swap;src:url(lato/Lato-Bold.ttf) format('truetype');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(inter/Inter%5Bopsz%2Cwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Nunito';font-style:normal;font-weight:200 1000;font-display:swap;src:url(nunito/Nunito%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Raleway';font-style:normal;font-weight:100 900;font-display:swap;src:url(raleway/Raleway%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(oswald/Oswald%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Rubik';font-style:normal;font-weight:300 900;font-display:swap;src:url(rubik/Rubik%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Work Sans';font-style:normal;font-weight:100 900;font-display:swap;src:url(work-sans/WorkSans%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:300 700;font-display:swap;src:url(quicksand/Quicksand%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Josefin Sans';font-style:normal;font-weight:100 700;font-display:swap;src:url(josefin-sans/JosefinSans%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:400;font-display:swap;src:url(barlow/Barlow-Regular.ttf) format('truetype');}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:700;font-display:swap;src:url(barlow/Barlow-Bold.ttf) format('truetype');}
+@font-face{font-family:'Kanit';font-style:normal;font-weight:400;font-display:swap;src:url(kanit/Kanit-Regular.ttf) format('truetype');}
+@font-face{font-family:'Kanit';font-style:normal;font-weight:700;font-display:swap;src:url(kanit/Kanit-Bold.ttf) format('truetype');}
+@font-face{font-family:'Ubuntu';font-style:normal;font-weight:400;font-display:swap;src:url(ubuntu/Ubuntu-Regular.ttf) format('truetype');}
+@font-face{font-family:'Ubuntu';font-style:normal;font-weight:700;font-display:swap;src:url(ubuntu/Ubuntu-Bold.ttf) format('truetype');}
+@font-face{font-family:'Exo 2';font-style:normal;font-weight:100 900;font-display:swap;src:url(exo-2/Exo2%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Comfortaa';font-style:normal;font-weight:300 700;font-display:swap;src:url(comfortaa/Comfortaa%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Fredoka';font-style:normal;font-weight:300 700;font-display:swap;src:url(fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Archivo Black';font-style:normal;font-weight:400;font-display:swap;src:url(archivo-black/ArchivoBlack-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bebas Neue';font-style:normal;font-weight:400;font-display:swap;src:url(bebas-neue/BebasNeue-Regular.ttf) format('truetype');}
+@font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(anton/Anton-Regular.ttf) format('truetype');}
+@font-face{font-family:'Righteous';font-style:normal;font-weight:400;font-display:swap;src:url(righteous/Righteous-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bangers';font-style:normal;font-weight:400;font-display:swap;src:url(bangers/Bangers-Regular.ttf) format('truetype');}
+@font-face{font-family:'Abril Fatface';font-style:normal;font-weight:400;font-display:swap;src:url(abril-fatface/AbrilFatface-Regular.ttf) format('truetype');}
+@font-face{font-family:'Alfa Slab One';font-style:normal;font-weight:400;font-display:swap;src:url(alfa-slab-one/AlfaSlabOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bungee';font-style:normal;font-weight:400;font-display:swap;src:url(bungee/Bungee-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bungee Shade';font-style:normal;font-weight:400;font-display:swap;src:url(bungee-shade/BungeeShade-Regular.ttf) format('truetype');}
+@font-face{font-family:'Lobster';font-style:normal;font-weight:400;font-display:swap;src:url(lobster/Lobster-Regular.ttf) format('truetype');}
+@font-face{font-family:'Monoton';font-style:normal;font-weight:400;font-display:swap;src:url(monoton/Monoton-Regular.ttf) format('truetype');}
+@font-face{font-family:'Rubik Mono One';font-style:normal;font-weight:400;font-display:swap;src:url(rubik-mono-one/RubikMonoOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(press-start-2p/PressStart2P-Regular.ttf) format('truetype');}
+@font-face{font-family:'Russo One';font-style:normal;font-weight:400;font-display:swap;src:url(russo-one/RussoOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Black Ops One';font-style:normal;font-weight:400;font-display:swap;src:url(black-ops-one/BlackOpsOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Titan One';font-style:normal;font-weight:400;font-display:swap;src:url(titan-one/TitanOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Luckiest Guy';font-style:normal;font-weight:400;font-display:swap;src:url(luckiest-guy/LuckiestGuy-Regular.ttf) format('truetype');}
+@font-face{font-family:'Passion One';font-style:normal;font-weight:400;font-display:swap;src:url(passion-one/PassionOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Staatliches';font-style:normal;font-weight:400;font-display:swap;src:url(staatliches/Staatliches-Regular.ttf) format('truetype');}
+@font-face{font-family:'Ultra';font-style:normal;font-weight:400;font-display:swap;src:url(ultra/Ultra-Regular.ttf) format('truetype');}
+@font-face{font-family:'Creepster';font-style:normal;font-weight:400;font-display:swap;src:url(creepster/Creepster-Regular.ttf) format('truetype');}
+@font-face{font-family:'Shrikhand';font-style:normal;font-weight:400;font-display:swap;src:url(shrikhand/Shrikhand-Regular.ttf) format('truetype');}
+@font-face{font-family:'Chewy';font-style:normal;font-weight:400;font-display:swap;src:url(chewy/Chewy-Regular.ttf) format('truetype');}
+@font-face{font-family:'Fugaz One';font-style:normal;font-weight:400;font-display:swap;src:url(fugaz-one/FugazOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bowlby One SC';font-style:normal;font-weight:400;font-display:swap;src:url(bowlby-one-sc/BowlbyOneSC-Regular.ttf) format('truetype');}
+@font-face{font-family:'Faster One';font-style:normal;font-weight:400;font-display:swap;src:url(faster-one/FasterOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 900;font-display:swap;src:url(playfair-display/PlayfairDisplay%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Merriweather';font-style:normal;font-weight:300 900;font-display:swap;src:url(merriweather/Merriweather%5Bopsz%2Cwdth%2Cwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;src:url(lora/Lora%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Cinzel';font-style:normal;font-weight:400 900;font-display:swap;src:url(cinzel/Cinzel%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300 700;font-display:swap;src:url(cormorant-garamond/CormorantGaramond%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Libre Baskerville';font-style:normal;font-weight:400 700;font-display:swap;src:url(libre-baskerville/LibreBaskerville%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'EB Garamond';font-style:normal;font-weight:400 800;font-display:swap;src:url(eb-garamond/EBGaramond%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'DM Serif Display';font-style:normal;font-weight:400;font-display:swap;src:url(dm-serif-display/DMSerifDisplay-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bitter';font-style:normal;font-weight:100 900;font-display:swap;src:url(bitter/Bitter%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Crimson Text';font-style:normal;font-weight:400;font-display:swap;src:url(crimson-text/CrimsonText-Regular.ttf) format('truetype');}
+@font-face{font-family:'Crimson Text';font-style:normal;font-weight:700;font-display:swap;src:url(crimson-text/CrimsonText-Bold.ttf) format('truetype');}
+@font-face{font-family:'Prata';font-style:normal;font-weight:400;font-display:swap;src:url(prata/Prata-Regular.ttf) format('truetype');}
+@font-face{font-family:'Yeseva One';font-style:normal;font-weight:400;font-display:swap;src:url(yeseva-one/YesevaOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Pacifico';font-style:normal;font-weight:400;font-display:swap;src:url(pacifico/Pacifico-Regular.ttf) format('truetype');}
+@font-face{font-family:'Dancing Script';font-style:normal;font-weight:400 700;font-display:swap;src:url(dancing-script/DancingScript%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Great Vibes';font-style:normal;font-weight:400;font-display:swap;src:url(great-vibes/GreatVibes-Regular.ttf) format('truetype');}
+@font-face{font-family:'Satisfy';font-style:normal;font-weight:400;font-display:swap;src:url(satisfy/Satisfy-Regular.ttf) format('truetype');}
+@font-face{font-family:'Sacramento';font-style:normal;font-weight:400;font-display:swap;src:url(sacramento/Sacramento-Regular.ttf) format('truetype');}
+@font-face{font-family:'Caveat';font-style:normal;font-weight:400 700;font-display:swap;src:url(caveat/Caveat%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Kalam';font-style:normal;font-weight:400;font-display:swap;src:url(kalam/Kalam-Regular.ttf) format('truetype');}
+@font-face{font-family:'Kalam';font-style:normal;font-weight:700;font-display:swap;src:url(kalam/Kalam-Bold.ttf) format('truetype');}
+@font-face{font-family:'Permanent Marker';font-style:normal;font-weight:400;font-display:swap;src:url(permanent-marker/PermanentMarker-Regular.ttf) format('truetype');}
+@font-face{font-family:'Shadows Into Light';font-style:normal;font-weight:400;font-display:swap;src:url(shadows-into-light/ShadowsIntoLight.ttf) format('truetype');}
+@font-face{font-family:'Amatic SC';font-style:normal;font-weight:400;font-display:swap;src:url(amatic-sc/AmaticSC-Regular.ttf) format('truetype');}
+@font-face{font-family:'Lobster Two';font-style:normal;font-weight:400;font-display:swap;src:url(lobster-two/LobsterTwo-Regular.ttf) format('truetype');}
+@font-face{font-family:'Lobster Two';font-style:normal;font-weight:700;font-display:swap;src:url(lobster-two/LobsterTwo-Bold.ttf) format('truetype');}
+@font-face{font-family:'Courgette';font-style:normal;font-weight:400;font-display:swap;src:url(courgette/Courgette-Regular.ttf) format('truetype');}
+@font-face{font-family:'Kaushan Script';font-style:normal;font-weight:400;font-display:swap;src:url(kaushan-script/KaushanScript-Regular.ttf) format('truetype');}
+@font-face{font-family:'Parisienne';font-style:normal;font-weight:400;font-display:swap;src:url(parisienne/Parisienne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Allura';font-style:normal;font-weight:400;font-display:swap;src:url(allura/Allura-Regular.ttf) format('truetype');}
+@font-face{font-family:'Alex Brush';font-style:normal;font-weight:400;font-display:swap;src:url(alex-brush/AlexBrush-Regular.ttf) format('truetype');}
+@font-face{font-family:'Cookie';font-style:normal;font-weight:400;font-display:swap;src:url(cookie/Cookie-Regular.ttf) format('truetype');}
+@font-face{font-family:'Yellowtail';font-style:normal;font-weight:400;font-display:swap;src:url(yellowtail/Yellowtail-Regular.ttf) format('truetype');}
+@font-face{font-family:'Tangerine';font-style:normal;font-weight:400;font-display:swap;src:url(tangerine/Tangerine-Regular.ttf) format('truetype');}
+@font-face{font-family:'Pinyon Script';font-style:normal;font-weight:400;font-display:swap;src:url(pinyon-script/PinyonScript-Regular.ttf) format('truetype');}
+@font-face{font-family:'Mr Dafoe';font-style:normal;font-weight:400;font-display:swap;src:url(mr-dafoe/MrDafoe-Regular.ttf) format('truetype');}
+@font-face{font-family:'Marck Script';font-style:normal;font-weight:400;font-display:swap;src:url(marck-script/MarckScript-Regular.ttf) format('truetype');}
+@font-face{font-family:'Rock Salt';font-style:normal;font-weight:400;font-display:swap;src:url(rock-salt/RockSalt-Regular.ttf) format('truetype');}
+@font-face{font-family:'Indie Flower';font-style:normal;font-weight:400;font-display:swap;src:url(indie-flower/IndieFlower-Regular.ttf) format('truetype');}
+@font-face{font-family:'Gloria Hallelujah';font-style:normal;font-weight:400;font-display:swap;src:url(gloria-hallelujah/GloriaHallelujah.ttf) format('truetype');}
+@font-face{font-family:'Patrick Hand';font-style:normal;font-weight:400;font-display:swap;src:url(patrick-hand/PatrickHand-Regular.ttf) format('truetype');}
+@font-face{font-family:'Handlee';font-style:normal;font-weight:400;font-display:swap;src:url(handlee/Handlee-Regular.ttf) format('truetype');}
+@font-face{font-family:'Homemade Apple';font-style:normal;font-weight:400;font-display:swap;src:url(homemade-apple/HomemadeApple-Regular.ttf) format('truetype');}
+@font-face{font-family:'Leckerli One';font-style:normal;font-weight:400;font-display:swap;src:url(leckerli-one/LeckerliOne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Damion';font-style:normal;font-weight:400;font-display:swap;src:url(damion/Damion-Regular.ttf) format('truetype');}
+@font-face{font-family:'Niconne';font-style:normal;font-weight:400;font-display:swap;src:url(niconne/Niconne-Regular.ttf) format('truetype');}
+@font-face{font-family:'Berkshire Swash';font-style:normal;font-weight:400;font-display:swap;src:url(berkshire-swash/BerkshireSwash-Regular.ttf) format('truetype');}
+@font-face{font-family:'Merienda';font-style:normal;font-weight:300 900;font-display:swap;src:url(merienda/Merienda%5Bwght%5D.ttf) format('truetype');}
+@font-face{font-family:'Style Script';font-style:normal;font-weight:400;font-display:swap;src:url(style-script/StyleScript-Regular.ttf) format('truetype');}
+@font-face{font-family:'Playball';font-style:normal;font-weight:400;font-display:swap;src:url(playball/Playball-Regular.ttf) format('truetype');}
+@font-face{font-family:'Italianno';font-style:normal;font-weight:400;font-display:swap;src:url(italianno/Italianno-Regular.ttf) format('truetype');}
+@font-face{font-family:'Bad Script';font-style:normal;font-weight:400;font-display:swap;src:url(bad-script/BadScript-Regular.ttf) format('truetype');}
+@font-face{font-family:'Mrs Saint Delafield';font-style:normal;font-weight:400;font-display:swap;src:url(mrs-saint-delafield/MrsSaintDelafield-Regular.ttf) format('truetype');}
+@font-face{font-family:'Ms Madi';font-style:normal;font-weight:400;font-display:swap;src:url(ms-madi/MsMadi-Regular.ttf) format('truetype');}
+@font-face{font-family:'Birthstone';font-style:normal;font-weight:400;font-display:swap;src:url(birthstone/Birthstone-Regular.ttf) format('truetype');}
+@font-face{font-family:'Emilys Candy';font-style:normal;font-weight:400;font-display:swap;src:url(emilys-candy/EmilysCandy-Regular.ttf) format('truetype');}
+@font-face{font-family:'Mystery Quest';font-style:normal;font-weight:400;font-display:swap;src:url(mystery-quest/MysteryQuest-Regular.ttf) format('truetype');}
+@font-face{font-family:'Spirax';font-style:normal;font-weight:400;font-display:swap;src:url(spirax/Spirax-Regular.ttf) format('truetype');}
+@font-face{font-family:'Henny Penny';font-style:normal;font-weight:400;font-display:swap;src:url(henny-penny/HennyPenny-Regular.ttf) format('truetype');}
+@font-face{font-family:'Mountains of Christmas';font-style:normal;font-weight:400;font-display:swap;src:url(mountains-of-christmas/MountainsofChristmas-Regular.ttf) format('truetype');}
+@font-face{font-family:'Princess Sofia';font-style:normal;font-weight:400;font-display:swap;src:url(princess-sofia/PrincessSofia-Regular.ttf) format('truetype');}
+@font-face{font-family:'Elsie';font-style:normal;font-weight:400;font-display:swap;src:url(elsie/Elsie-Regular.ttf) format('truetype');}
+@font-face{font-family:'Fondamento';font-style:normal;font-weight:400;font-display:swap;src:url(fondamento/Fondamento-Regular.ttf) format('truetype');}
+@font-face{font-family:'Cherry Swash';font-style:normal;font-weight:400;font-display:swap;src:url(cherry-swash/CherrySwash-Regular.ttf) format('truetype');}
+@font-face{font-family:'Delius Swash Caps';font-style:normal;font-weight:400;font-display:swap;src:url(delius-swash-caps/DeliusSwashCaps-Regular.ttf) format('truetype');}
+@font-face{font-family:'Sniglet';font-style:normal;font-weight:400;font-display:swap;src:url(sniglet/Sniglet-Regular.ttf) format('truetype');}
+@font-face{font-family:'Margarine';font-style:normal;font-weight:400;font-display:swap;src:url(margarine/Margarine-Regular.ttf) format('truetype');}
+@font-face{font-family:'Grand Hotel';font-style:normal;font-weight:400;font-display:swap;src:url(grand-hotel/GrandHotel-Regular.ttf) format('truetype');}
+@font-face{font-family:'Sail';font-style:normal;font-weight:400;font-display:swap;src:url(sail/Sail-Regular.ttf) format('truetype');}
+@font-face{font-family:'Lemon';font-style:normal;font-weight:400;font-display:swap;src:url(lemon/Lemon-Regular.ttf) format('truetype');}
+@font-face{font-family:'Ribeye';font-style:normal;font-weight:400;font-display:swap;src:url(ribeye/Ribeye-Regular.ttf) format('truetype');}
+@font-face{font-family:'Oleo Script';font-style:normal;font-weight:400;font-display:swap;src:url(oleo-script/OleoScript-Regular.ttf) format('truetype');}
+@font-face{font-family:'Galada';font-style:normal;font-weight:400;font-display:swap;src:url(galada/Galada-Regular.ttf) format('truetype');}
+@font-face{font-family:'Fontdiner Swanky';font-style:normal;font-weight:400;font-display:swap;src:url(fontdiner-swanky/FontdinerSwanky-Regular.ttf) format('truetype');}
+@font-face{font-family:'Sancreek';font-style:normal;font-weight:400;font-display:swap;src:url(sancreek/Sancreek-Regular.ttf) format('truetype');}
+@font-face{font-family:'Space Mono';font-style:normal;font-weight:400;font-display:swap;src:url(space-mono/SpaceMono-Regular.ttf) format('truetype');}
+@font-face{font-family:'Space Mono';font-style:normal;font-weight:700;font-display:swap;src:url(space-mono/SpaceMono-Bold.ttf) format('truetype');}
+@font-face{font-family:'Courier Prime';font-style:normal;font-weight:400;font-display:swap;src:url(courier-prime/CourierPrime-Regular.ttf) format('truetype');}
+@font-face{font-family:'Courier Prime';font-style:normal;font-weight:700;font-display:swap;src:url(courier-prime/CourierPrime-Bold.ttf) format('truetype');}
+@font-face{font-family:'Source Code Pro';font-style:normal;font-weight:200 900;font-display:swap;src:url(source-code-pro/SourceCodePro%5Bwght%5D.ttf) format('truetype');}
