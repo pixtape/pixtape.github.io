@@ -126,11 +126,14 @@
       UI.rebuildPanel();
     },
 
-    onDown(p) {
+    onDown(p, drag) {
       if (!T.sess || !T.sel || !T.sel.pick) return;
       const L = T.sess.layer, q = App.docToLayer(L, p.x, p.y);
       const W = L.canvas.width, H = L.canvas.height;
-      if (q.x < 0 || q.y < 0 || q.x > W || q.y > H) return;
+      // sürüklerken imleç resmin dışına çıkarsa merkez kenarda imlece en yakın noktayı izler
+      if (drag) { q.x = U.clamp(q.x, 0, W); q.y = U.clamp(q.y, 0, H); }
+      else if (q.x < 0 || q.y < 0 || q.x > W || q.y > H) return;
+      T.dragging = true;
       if (T.sel.pick === 'center') { T.p.cx = q.x / W; T.p.cy = q.y / H; }
       else {
         const d = L.canvas.getContext('2d').getImageData(Math.floor(q.x), Math.floor(q.y), 1, 1).data;
@@ -139,8 +142,8 @@
       }
       T.run();
     },
-    onMove(p) { if (T.sel && T.sel.pick === 'center') T.onDown(p); },
-    onUp() { if (T.sel && T.sel.pick) T.hist.push(); },
+    onMove(p) { if (T.sel && T.sel.pick === 'center') T.onDown(p, T.dragging); },
+    onUp() { if (T.sel && T.sel.pick && T.dragging) T.hist.push(); T.dragging = false; },
     drawOverlay(ctx) {
       if (!T.sess || !T.sel || T.sel.pick !== 'center' || !T.on) return;
       const L = T.sess.layer, W = L.canvas.width, H = L.canvas.height;
@@ -273,7 +276,9 @@
         tg.onclick = () => {
           T.advOpen[f.id] = !T.advOpen[f.id];
           wrap.classList.toggle('open', T.advOpen[f.id]); tg.classList.toggle('open', T.advOpen[f.id]); lab();
-          if (T.advOpen[f.id]) setTimeout(() => wrap.scrollIntoView({ block: 'nearest', behavior: App.scrollBehavior() }), 220);
+          // yalnızca ayarlar kutusu kendi içinde kaydırılır; scrollIntoView yapışkan kutuyu taşıyan paneli de kaydırıp kutuyu aşağı itiyordu
+          const sc = out.firstChild;
+          if (T.advOpen[f.id]) setTimeout(() => { if (sc.scrollHeight > sc.clientHeight) sc.scrollTo({ top: sc.scrollHeight, behavior: App.scrollBehavior() }); }, 230);
         };
         lab();
         out.appendChild(tg);

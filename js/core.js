@@ -1156,11 +1156,33 @@
   /* ---------------------------------------------------------------- meşgul katmanı */
   // Yükleniyor ekranı. fn(progress) içinden progress(0..1, [ek yazı]) çağrılırsa çubuk dolar;
   // hiç çağrılmazsa çubuk kayan (belirsiz) biçimde kalır.
-  App.busy = async (msg, fn) => {
+  /* İşlem penceresi. o.cancel verilirse köşede bir X çıkar; X ya da ESC "emin misiniz" diye sorar, onaylanırsa o.cancel çağrılır.
+     İşlem sürerken klavye alttaki pencerelere ve araçlara ulaşmaz (ör. ESC alttaki pencereyi kapatmaz). */
+  App.busy = async (msg, fn, o = {}) => {
     const el = document.getElementById('busy'), box = el.querySelector('.busy-box');
     const bar = el.querySelector('.busy-bar i'), pct = el.querySelector('.busy-pct');
     el.querySelector('.busy-msg').textContent = msg || 'Processing…';
     box.classList.remove('det'); bar.style.width = ''; pct.textContent = '';
+    let asking = false, closeAsk = null, x = box.querySelector('.busy-x');
+    const ask = async () => {
+      if (asking || !o.cancel) return;
+      asking = true;
+      const r = await App.ui.modal({
+        title: 'Cancel', width: 380, top: true, content: U.h('p', { class: 'modal-msg' }, o.ask || 'Are you sure you want to cancel?'),
+        buttons: [{ label: 'Continue', value: null }, { label: 'Stop', value: true, danger: true }], enter: () => true,
+        onOpen: (b, close) => { closeAsk = close; },
+      });
+      asking = false; closeAsk = null;
+      if (r && el.classList.contains('show')) { o.cancel(); x.disabled = true; }
+    };
+    if (!x) { x = U.h('button', { class: 'busy-x icon-btn', title: 'Cancel', html: App.icon('close', 16) }); box.appendChild(x); }
+    x.onclick = ask; x.disabled = false; x.style.display = o.cancel ? '' : 'none';
+    const key = e => {
+      if (asking) return; // onay penceresi kendi tuşlarını işler
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (e.key === 'Escape') ask();
+    };
+    window.addEventListener('keydown', key, true);
     const progress = App.busy.progress = (f, extra) => {
       f = U.clamp(f || 0, 0, 1);
       box.classList.add('det');
@@ -1171,7 +1193,7 @@
     await U.nextFrame();
     try { return await fn(progress); }
     catch (e) { console.error(e); App.ui.toast('Error: ' + (e.message || e), 'error'); }
-    finally { el.classList.remove('show'); App.busy.progress = () => {}; }
+    finally { el.classList.remove('show'); App.busy.progress = () => {}; window.removeEventListener('keydown', key, true); if (closeAsk) closeAsk(null); }
   };
   App.busy.progress = () => {};
 

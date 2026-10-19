@@ -707,18 +707,46 @@
     return out;
   };
 
+  /* Işık parlaması: fotoğrafın parlak noktaları objektif bulanıklığındaki gibi yuvarlak ışık toplarına dönüşür.
+     Küçültülmüş parlak noktalar bir disk boyunca dağıtılır (disk bulanıklığı), sonra bulanık resmin üstüne ekran karışımıyla eklenir. */
+  const bokehGlow = (src, blurred, r, k) => {
+    const w = src.width, h = src.height, s = Math.min(1, 480 / Math.max(w, h));
+    const sw = Math.max(1, Math.round(w * s)), sh = Math.max(1, Math.round(h * s));
+    const hi = U.canvas(sw, sh), hx = hi.getContext('2d');
+    hx.drawImage(src, 0, 0, sw, sh);
+    const img = hx.getImageData(0, 0, sw, sh), d = img.data, t0 = 0.8 - 0.22 * k;
+    for (let i = 0; i < d.length; i += 4) {
+      let t = (lum(d[i], d[i + 1], d[i + 2]) / 255 - t0) / (1 - t0);
+      // parlaklık saydamlığa yazılır: karanlık yerler tamamen saydam kalır, şeffaf katmanlar bozulmaz
+      d[i + 3] = t <= 0 ? 0 : t * t * d[i + 3];
+    }
+    hx.putImageData(img, 0, 0);
+    // disk: iç içe halkalar, dış halka biraz daha güçlü (ışık toplarının belirgin kenarı)
+    const R = Math.max(2, r * s * 1.8), rings = Math.min(6, Math.max(2, Math.round(R / 1.5)));
+    const pts = [[0, 0, 1]];
+    for (let j = 1; j <= rings; j++) {
+      const rr = R * j / rings, n = Math.max(6, Math.round(rr * 4.5));
+      for (let i = 0; i < n; i++) { const a = (i + j * 0.5) / n * Math.PI * 2; pts.push([Math.cos(a) * rr, Math.sin(a) * rr, j === rings ? 1.6 : 1]); }
+    }
+    let wsum = 0;
+    for (const p of pts) wsum += p[2];
+    const glow = U.canvas(sw, sh), gx = glow.getContext('2d');
+    gx.globalCompositeOperation = 'lighter';
+    const gain = 3 + 14 * k;
+    for (const [x, y, wt] of pts) { gx.globalAlpha = Math.min(1, wt / wsum * gain); gx.drawImage(hi, x, y); }
+    const bx = blurred.getContext('2d');
+    bx.save();
+    bx.globalCompositeOperation = 'screen'; bx.globalAlpha = Math.min(1, 0.35 + k);
+    bx.imageSmoothingQuality = 'high';
+    bx.drawImage(glow, 0, 0, w, h);
+    bx.restore();
+  };
+
   IMG.focus = (src, o) => {
     const w = src.width, h = src.height, M = Math.max(w, h);
     const r = Math.max(0.5, (o.blur || 50) / 100 * 0.025 * M);
-    let blurred = IMG.blur(src, r);
-    if (o.bokeh) {
-      const img = U.getData(blurred), d = img.data, k = o.bokeh / 100 * 1.6;
-      for (let i = 0; i < d.length; i += 4) {
-        const L = lum(d[i], d[i + 1], d[i + 2]) / 255;
-        if (L > 0.55) { const f = 1 + (L - 0.55) * k * 2.2; d[i] *= f; d[i + 1] *= f; d[i + 2] *= f; }
-      }
-      blurred = U.fromData(img);
-    }
+    const blurred = IMG.blur(src, r);
+    if (o.bokeh) bokehGlow(src, blurred, r, o.bokeh / 100);
     const mask = U.canvas(w, h), m = mask.getContext('2d');
     const cx = (o.cx == null ? 0.5 : o.cx) * w, cy = (o.cy == null ? 0.5 : o.cy) * h;
     const half = (o.size == null ? 0.25 : o.size) * M * 0.5, fe = (o.feather == null ? 0.3 : o.feather) * M * 0.5 + 1;

@@ -87,7 +87,8 @@
     if (o.effOn && o.effect >= 0) c = IMG.applyEffect(c, IMG.EFFECTS[o.effect], o.effAmt / 100);
     if (o.borderOn && o.border > 0) {
       const b = Math.round(Math.min(c.width, c.height) * o.border / 100), t = U.canvas(c.width + b * 2, c.height + b * 2), x = t.getContext('2d');
-      x.fillStyle = o.borderColor; x.fillRect(0, 0, t.width, t.height); x.drawImage(c, b, b);
+      x.fillStyle = o.borderGradOn && o.borderGrad ? U.gradFill(x, o.borderGrad, 0, 0, t.width, t.height) : o.borderColor;
+      x.fillRect(0, 0, t.width, t.height); x.drawImage(c, b, b);
       c = t;
     }
     if (o.wm && o.wmText) {
@@ -116,7 +117,7 @@
       const o = {
         resize: true, rmode: 'max', px: 1920, pct: 50, noUp: true, crop: false, ratio: 'free', rw: 3, rh: 2, fx: 0.1, fy: 0.1, fw: 0.8, fh: 0.8, cx: 0.5, cy: 0.5, cs: 0.9,
         color: false, auto: false, brightness: 0, contrast: 0, saturation: 0, sharpen: 0, temperature: 0,
-        effOn: false, effect: 0, effAmt: 100, borderOn: false, border: 3, borderColor: '#ffffff',
+        effOn: false, effect: 0, effAmt: 100, borderOn: false, border: 3, borderColor: '#ffffff', borderGradOn: false, borderGrad: null,
         wm: false, wmText: '© Pixtape', wmPos: 'br', wmX: 0.85, wmY: 0.9, wmSize: 4, wmOp: 70, wmColor: '#ffffff', wmGradOn: false, wmGrad: null, wmFont: WM_FONTS[0], wmBold: true, wmShadow: true,
         fmt: 'jpg', q: 90, suffix: '_edited',
       };
@@ -451,7 +452,10 @@
         ], { toggle: { value: o.effOn, onChange: set('effOn') } }),
         UI.section('Border', [
           UI.slider({ label: 'Thickness (%)', min: 0.5, max: 15, step: 0.5, value: o.border, onInput: set('border') }).el,
-          UI.color({ label: 'Color', value: o.borderColor, palette: false, onInput: set('borderColor') }).el,
+          UI.color({
+            label: 'Color', value: o.borderColor, palette: false, onInput: set('borderColor'),
+            grad: { on: o.borderGradOn, fresh: !o.borderGrad, value: o.borderGrad || U.gradDef(o.borderColor, '#6c5cff', 135), onMode: on => { if (!o.borderGrad) o.borderGrad = U.gradDef(o.borderColor, '#6c5cff', 135); set('borderGradOn')(on); }, onInput: set('borderGrad') },
+          }).el,
         ], { toggle: { value: o.borderOn, onChange: set('borderOn') } }),
         UI.section('Watermark', [
           h('div', { class: 'field' }, h('label', { class: 'fld-label' }, 'Text'), h('input', { type: 'text', class: 'full', value: o.wmText, oninput: e => { o.wmText = e.target.value; live(); } })),

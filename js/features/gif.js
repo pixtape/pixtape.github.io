@@ -236,7 +236,9 @@
       const save = async () => {
         if (!st.frames.length) { UI.toast('Add frames first', 'warn'); return; }
         if (!result) {
-          await App.busy('Creating GIF…', prog => build(prog));
+          let stopped = false;
+          await App.busy('Creating GIF…', prog => build(prog), { cancel: () => { stopped = true; job++; stopWorker(); } });
+          if (stopped) return;
           if (!result) { UI.toast('Could not create GIF', 'error'); return; }
         }
         const ok = await App.saveBlob(result.blob, 'pixtape.gif', [{ description: 'GIF', accept: { 'image/gif': ['.gif'] } }]);
@@ -259,11 +261,13 @@
         const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: U.clamp(W * H * 12, 2e6, 16e6) });
         const chunks = [];
         rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-        const stopped = new Promise(r => { rec.onstop = r; });
+        const recStopped = new Promise(r => { rec.onstop = r; });
         const tb = st.transparentBg;
         const reps = st.loop > 0 ? st.loop + 1 : 1;
         const total = seq.reduce((a, f) => a + f.delay, 0) * reps;
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        // iptal edilince bekleme hemen biter
+        let stopped = false, wake = null;
+        const sleep = ms => new Promise(r => { wake = r; setTimeout(r, ms); });
         st.transparentBg = false;
         const draw = f => { renderSeq(f, W, H, x, tmp); track.requestFrame(); };
         try {
@@ -272,8 +276,9 @@
             rec.start();
             let t = 0;
             const t0 = performance.now();
-            for (let r = 0; r < reps; r++) {
+            for (let r = 0; r < reps && !stopped; r++) {
               for (const f of seq) {
+                if (stopped) break;
                 draw(f);
                 t += f.delay;
                 // gerçek zamana göre bekle (kayma birikmesin)
@@ -284,9 +289,10 @@
             draw(seq[seq.length - 1]);
             await sleep(60);
             rec.stop();
-            await stopped;
-          });
+            await recStopped;
+          }, { cancel: () => { stopped = true; if (wake) wake(); } });
         } finally { st.transparentBg = tb; track.stop(); }
+        if (stopped) return;
         if (!chunks.length) { UI.toast('Could not create video', 'error'); return; }
         const blob = new Blob(chunks, { type: mp4 ? 'video/mp4' : 'video/webm' });
         const ext = mp4 ? '.mp4' : '.webm';

@@ -4,6 +4,8 @@ A free, easy photo editor for your browser. No sign-up, no ads, and your photos 
 
 **[Open Pixtape](https://pixtape.github.io)**
 
+![Pixtape editor with the Effect tool](assets/screenshots/effects.jpg)
+
 ## Features
 
 - **Edit:** crop, straighten, resize, adjust light and color, curves, 50 one-click effects, 22 filters
@@ -12,6 +14,14 @@ A free, easy photo editor for your browser. No sign-up, no ads, and your photos 
 - **Create:** text with 120+ fonts, drawing, shapes, stickers, frames, layers and groups
 - **More:** collage, batch editing, GIF and MP4 maker, image compressor, project tabs
 - **Languages:** English, Türkçe, 中文, Русский
+
+## Screenshots
+
+| AI background removal | Blur background |
+|---|---|
+| ![AI background removal](assets/screenshots/cutout.jpg) | ![Blur background filter](assets/screenshots/filter.jpg) |
+| **Text with 120+ fonts** | **Collage** |
+| ![Text tool](assets/screenshots/text.jpg) | ![Collage maker](assets/screenshots/collage.jpg) |
 
 ## Good to know
 
@@ -28,6 +38,8 @@ Bug reports, ideas and translations are welcome in [Issues](https://github.com/p
 Copyright (C) 2026 bcanusar
 
 Pixtape is free software: you can redistribute it and/or modify it under the terms of the [GNU Affero General Public License v3.0](LICENSE). If you run a modified version for others over a network, you must share its source code under the same license. Third-party icons, fonts and libraries are under their own licenses, see [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+
+Photos in the screenshots are from [Unsplash](https://unsplash.com) by Alexey Topolyanskiy, Alexander Shustov, Roberto Nickson, Andrew Ridley, veeterzy and André Spieker, used under the [Unsplash License](https://unsplash.com/license).
 
 ## Support
 

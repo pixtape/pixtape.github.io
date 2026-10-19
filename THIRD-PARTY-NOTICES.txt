@@ -423,3 +423,16 @@ commercial work.
 - Source Code Pro: SIL Open Font License 1.1
     Copyright 2010, 2012 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe Systems Incorporated in the United States and/or other countries.
     fonts/source-code-pro/LICENSE.txt
+
+------------------------------------------------------------------------
+5. Photos in the screenshots (folder "assets/screenshots" and
+   assets/social-preview.png)
+------------------------------------------------------------------------
+The photos shown in the screenshots are from Unsplash (https://unsplash.com)
+and are used under the Unsplash License (https://unsplash.com/license):
+- Fjord: Alexey Topolyanskiy, https://unsplash.com/photos/-oWyJoSqBRM
+- Portrait with flowers: Alexander Shustov, https://unsplash.com/photos/AHBiSKaENwc
+- Canoe on a lake: Roberto Nickson, https://unsplash.com/photos/7BjmDICVloE
+- Green hills: Andrew Ridley, https://unsplash.com/photos/Kt5hRENuotI
+- Strawberries: veeterzy, https://unsplash.com/photos/OJJIaFZOeX4
+- Black puppy: Andre Spieker, https://unsplash.com/photos/8wTPqxlnKM4

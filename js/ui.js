@@ -677,6 +677,8 @@
     const root = document.getElementById('modals');
     const close = v => { wrap.remove(); document.removeEventListener('keydown', key, true); resolve(v); };
     const key = e => {
+      // tuşları yalnızca en üstteki pencere işler (iç içe pencerede ESC ikisini birden kapatmasın)
+      if (wrap !== root.lastElementChild) return;
       if (e.key === 'Escape') { e.stopPropagation(); close(null); }
       if (e.key === 'Enter' && o.enter && !(e.target && e.target.tagName === 'TEXTAREA')) { e.stopPropagation(); e.preventDefault(); close(o.enter()); }
     };
@@ -689,8 +691,21 @@
       h('div', { class: 'modal-head' }, h('h3', null, o.title || ''), UI.iconBtn('close', 'Close', () => close(null))),
       h('div', { class: 'modal-body' }, o.content),
       btns.length ? h('div', { class: 'modal-foot' }, btns) : null);
-    const wrap = h('div', { class: 'modal-wrap', onmousedown: e => { if (e.target === wrap && !o.sticky) close(null); } }, box);
+    const wrap = h('div', { class: 'modal-wrap' + (o.top ? ' top' : ''), onmousedown: e => { if (e.target === wrap && !o.sticky) close(null); } }, box);
     root.appendChild(wrap);
+    /* Ortalanan pencere yarım piksele denk gelebiliyor; önizleme oynarken ya da imleç gezinirken ekran yeniden
+       çizildikçe yazılar 1 px aşağı yukarı titriyordu. Pencere her boyut değişiminde tam piksele oturtulur. */
+    if (window.ResizeObserver) {
+      const snap = () => {
+        const cs = getComputedStyle(box), bh = parseFloat(cs.height), bw = parseFloat(cs.width);
+        const t = (wrap.clientHeight - bh) / 2, l = (wrap.clientWidth - bw) / 2;
+        box.style.top = (t > 0 ? Math.round(t) - t : 0) + 'px';
+        box.style.left = (l > 0 ? Math.round(l) - l : 0) + 'px';
+      };
+      box.style.position = 'relative';
+      new ResizeObserver(snap).observe(box);
+      new ResizeObserver(snap).observe(wrap);
+    }
     document.addEventListener('keydown', key, true);
     if (o.onOpen) o.onOpen(box, close);
     const f = box.querySelector('input[autofocus], input[type=text], input[type=number]');

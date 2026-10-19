@@ -585,6 +585,9 @@ html.no-motion .kbd-key.rec { animation: kbdrec 1s ease-in-out infinite !importa
 .busy-bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 3px; background: var(--grad); transition: width .15s; }
 .busy-box:not(.det) .busy-bar i { width: 35%; animation: busyslide 1.1s ease-in-out infinite; transition: none; }
 @keyframes busyslide { from { left: -35%; } to { left: 100%; } }
+.busy-box { position: relative; }
+.busy-x { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; }
+.modal-wrap.top { z-index: 1600; }
 .busy-pct { font-size: 11.5px; color: var(--text3); min-height: 15px; margin-top: -4px; font-variant-numeric: tabular-nums; }
 
 #dropOverlay { position: fixed; inset: 0; z-index: 1800; display: none; align-items: center; justify-content: center; background: rgba(108, 99, 255, .25); border: 3px dashed var(--accent); pointer-events: none; }
@@ -688,7 +691,7 @@ html.no-motion .kbd-key.rec { animation: kbdrec 1s ease-in-out infinite !importa
 .bt-bar { height: 100%; width: 0; background: var(--grad); transition: width .2s; }
 
 /* ---------------------------------------------------------------- GIF oluşturucu / sıkıştırıcı */
-.gif-wrap { display: grid; grid-template-columns: 1fr 300px; gap: 18px; height: min(72vh, 720px); }
+.gif-wrap { display: grid; grid-template-columns: 1fr 300px; gap: 18px; height: min(72vh, 720px); height: round(min(72vh, 720px), 1px); }
 .gif-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; gap: 10px; }
 .gif-side { overflow-y: auto; scrollbar-gutter: stable; }
 .gif-toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
