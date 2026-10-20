@@ -51,7 +51,7 @@
     // Sol gezinme çubuğu
     const navBtn = (icon, label, fn, cls) => {
       const b = h('button', { class: 'hn-item' + (cls ? ' ' + cls : ''), onclick: fn });
-      b.innerHTML = App.icon(icon, 18) + `<span>${label}</span>`;
+      b.innerHTML = (icon === 'heart' ? App.heartIcon(18) : App.icon(icon, 18)) + `<span>${label}</span>`;
       return b;
     };
     const langBtn = h('button', { class: 'hn-item hn-lang', title: App.t('Language'), 'data-noi18n': '' });
@@ -246,7 +246,9 @@
     return `<svg viewBox="0 0 48 48" width="100%" height="100%"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#00c2ff"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="12" fill="url(#${id})"/><circle cx="24" cy="26.7" r="10" fill="none" stroke="#fff" stroke-width="3.2"/><circle cx="24" cy="26.7" r="3.6" fill="#fff"/><path d="M15 14.2h5l2.5-3h5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   };
   App.logoSVG = logoSVG;
-  App.VERSION = '1.1';
+  App.VERSION = '1.2';
+  // program içi sürüklemeler yalnızca bu türü taşır; tarayıcı sekme çubuğu onu metin sanıp aramaz
+  App.DRAG_MIME = 'application/x-pixtape';
   // Proje dosyası uzantısı
   App.PROJECT_RE = /\.pixtape$/i;
   // Bağış bağlantısı ("Pixtape'i destekleyin" penceresindeki düğme). Boş bırakılırsa düğme gösterilmez.
@@ -562,6 +564,27 @@
       x.fillStyle = gradOn ? U.gradFill(x, grad, 0, 0, cv.width, cv.height) : color; x.fillRect(0, 0, cv.width, cv.height);
       App.addLayer(App.newLayer(cv, { name: gradOn ? 'Gradient Fill' : 'Color Fill' }));
       App.commit('Fill Layer');
+    },
+    // En alta düz renk ya da renk geçişi olarak arka plan ekler (ör. arka planı kaldırılmış fotoğrafın arkasına)
+    async addBackground() {
+      if (!App.doc) return;
+      let color = '#ffffff', gradOn = false, grad = U.gradDef('#6c5cff', '#00c2ff', 135);
+      const c = UI.color({ value: color, onInput: v => { color = v; }, grad: { on: false, fresh: true, value: grad, onMode: on => { gradOn = on; }, onInput: g => { grad = g; } } });
+      const sw = (v, n) => h('button', { class: 'qc-btn', title: n, style: { background: v }, onclick: () => { color = v; c.set(v); gradOn = false; c.setMode(false); } });
+      const presets = h('div', { class: 'bg-presets' },
+        sw('#ffffff', 'White'), sw('#000000', 'Black'), sw('#808080', 'Gray'), sw('#f4efe6', 'Cream'),
+        sw('#ffd6e0', 'Pink'), sw('#cdeccf', 'Mint'), sw('#cfe3ff', 'Light Blue'), sw('#6c5cff', 'Purple'), sw('#1e2a4a', 'Navy'));
+      const r = await UI.modal({ title: 'Add Background', width: 360, content: h('div', null,
+        h('div', { class: 'bg-add' }, c.el, h('span', { class: 'note' }, 'Presets:'), presets),
+        UI.note("Added as the bottom layer, behind everything else. Useful after removing a photo's background.")),
+        buttons: [{ label: 'Cancel', value: null }, { label: 'Add', primary: true, value: 'ok' }] });
+      if (r !== 'ok') return;
+      // Arka Planı Kaldır aracında uygulanmamış değişiklik varsa önce uygulanır
+      if (App.tool && App.tool.id === 'cutout' && App.tool.dirty) await App.tool.apply();
+      const d = App.doc, cv = U.canvas(d.w, d.h), x = cv.getContext('2d');
+      x.fillStyle = gradOn ? U.gradFill(x, grad, 0, 0, d.w, d.h) : color; x.fillRect(0, 0, d.w, d.h);
+      App.addLayer(App.newLayer(cv, { name: 'Background' }), { index: 0, select: false });
+      App.commit('Add Background');
     },
     duplicate() { const L = layerOrWarn(); if (!L) return; App.duplicateLayer(L); App.commit('Duplicate Layer'); },
     // Seçili bütün katmanları siler (Ctrl / Shift ile seçilenler dahil)
@@ -1038,7 +1061,15 @@
      "Fotoğrafı bırakın" perdesi açılmaz ve bırakılınca resim eklenmez (tarayıcı resmi "download" adlı dosya gibi taşır). */
   let innerDrag = false;
   const hideDrop = () => { dragDepth = 0; if (!projDrag) dropOverlay().classList.remove('show'); };
-  document.addEventListener('dragstart', () => { innerDrag = true; }, true);
+  document.addEventListener('dragstart', e => {
+    innerDrag = true;
+    const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (el && el.closest('input, textarea, [contenteditable]')) return;
+    // resim, bağlantı ya da seçili yazı gibi kendiliğinden sürüklenen şeyler hiç sürüklenmez;
+    // sürüklenebilir öğelerin tarayıcı verisi (yazı, adres) silinir ki sekme çubuğuna bırakınca arama açılmasın
+    if (!el || !el.closest('[draggable="true"]')) { e.preventDefault(); innerDrag = false; return; }
+    e.dataTransfer.clearData();
+  }, true);
   document.addEventListener('dragend', () => { innerDrag = false; hideDrop(); }, true);
   // bırakma başka bir öğede durdurulsa da (ör. sekme çubuğu) perde kapanır
   window.addEventListener('drop', () => { setTimeout(() => { innerDrag = false; hideDrop(); }, 0); }, true);

@@ -114,7 +114,7 @@
             { label: 'Duplicate in New Tab', icon: 'copy', onClick: () => T.duplicate(e) },
           ], { at: { x: ev.clientX, y: ev.clientY } });
         });
-        tab.addEventListener('dragstart', ev => { dragI = i; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', 'tab'); tab.classList.add('drag'); });
+        tab.addEventListener('dragstart', ev => { dragI = i; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData(App.DRAG_MIME, 'tab'); tab.classList.add('drag'); });
         tab.addEventListener('dragend', () => tab.classList.remove('drag'));
         tab.addEventListener('dragover', ev => { if (dragI >= 0 && dragI !== i) { ev.preventDefault(); tab.classList.add('over'); } });
         tab.addEventListener('dragleave', () => tab.classList.remove('over'));

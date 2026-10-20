@@ -554,7 +554,9 @@
 
   UI.select = o => {
     const sel = h('select', { onchange: () => o.onChange && o.onChange(sel.value) },
-      o.options.map(op => {
+      o.options.map(function opt(op) {
+        // { group, options } bir başlık altında toplanmış seçenekler
+        if (op && op.group) return h('optgroup', { label: op.group }, op.options.map(opt));
         const [v, t] = Array.isArray(op) ? op : [op, op];
         return h('option', { value: v, selected: String(v) === String(o.value) }, t);
       }));
@@ -745,6 +747,7 @@
         class: 'menu-item' + (it.checked ? ' checked' : ''), disabled: !!it.disabled,
         onclick: () => { UI.closeMenus(); it.onClick && it.onClick(); },
       });
+      if (it.onHover) b.addEventListener('pointerenter', it.onHover);
       // o.checkRight: tik solda değil sağda (ör. bayraklı dil listesi)
       const chk = it.checked ? App.icon('check', 16) : '';
       const ico = it.iconHTML || (it.icon ? App.icon(it.icon, 16) : o.checkRight ? '' : chk);
@@ -756,6 +759,12 @@
       b.innerHTML = (ico || !o.checkRight ? `<span class="mi-ico">${ico}</span>` : '') + `<span class="mi-label"${it.noi18n ? ' data-noi18n=""' : ''}>${lbl}${chk2}</span><span class="mi-key">${it.key || (o.checkRight ? chk : '')}</span>`;
       return b;
     }));
+    m._onClose = o.onClose;
+    if (o.onLeave) m.addEventListener('pointerleave', o.onLeave);
+    if (o.cls) m.classList.add(...o.cls.split(' '));
+    if (o.minWidth) m.style.minWidth = o.minWidth + 'px';
+    // yukarı açılan menü düğmenin üstündeki alana sığar, sığmazsa kendi içinde kayar (düğmenin üstünü örtmez)
+    if (o.up && anchor) m.style.maxHeight = Math.max(120, r.top - 8) + 'px';
     document.body.appendChild(m);
     const mw = m.offsetWidth, mh = m.offsetHeight;
     let x = o.right ? r.right - mw : r.left, y = o.up ? r.top - mh - 4 : r.bottom + 4;
@@ -769,8 +778,10 @@
     }), 0);
     return m;
   };
+  // pencere boyutu değişince açık menü eski yerinde asılı kalmasın
+  window.addEventListener('resize', () => { if (document.querySelector('.menu')) UI.closeMenus(); });
   UI.closeMenus = () => {
-    document.querySelectorAll('.menu').forEach(m => m.remove());
+    document.querySelectorAll('.menu').forEach(m => { m.remove(); if (m._onClose) m._onClose(); });
     if (UI._menuAway) document.removeEventListener('mousedown', UI._menuAway);
     UI._menuAway = null;
   };
@@ -792,12 +803,20 @@
         // açık araca yeniden basmak araç panelini kapatır / açar (başka bir araç seçmek paneli yine açar)
         if (App.tool && App.tool.id === id) { App.layout.toggleToolPanel(); return; }
         App.layout.toggleToolPanel(true);
-        App.setTool(id);
+        // seçim hemen görünsün: yeni aracın paneli kurulurken eski araç bir an parlak kalmasın diye
+        // önce düğmeler boyanır, araç bir sonraki karede değişir; değişmezse (ör. "İptal") eski hale dönülür
+        const sync = () => tb.querySelectorAll('.tool-btn[data-tool]').forEach(x => x.classList.toggle('on', !!App.tool && x.dataset.tool === App.tool.id));
+        tb.querySelectorAll('.tool-btn[data-tool]').forEach(x => x.classList.toggle('on', x === b));
+        let go = false;
+        const run = () => { if (go) return; go = true; App.setTool(id).finally(sync); };
+        requestAnimationFrame(() => setTimeout(run, 0));
+        setTimeout(run, 80); // sekme arka plandaysa kare gelmez
       } });
       b.innerHTML = App.icon(t.icon, 24);
-      b.addEventListener('mouseenter', () => toolFly(b, t, K('tool:' + id)));
-      b.addEventListener('mouseleave', hideFly);
-      b.addEventListener('dragstart', e => { hideFly(); dragId = id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); b.classList.add('drag'); });
+      // dokunmatik ekranda gösterilmez: parmak kalkınca ayrılma olayı gelmez, şerit açık kalıp yandaki düğmeleri örter
+      b.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse' && !App.layout.isMobile()) toolFly(b, t, K('tool:' + id)); });
+      b.addEventListener('pointerleave', hideFly);
+      b.addEventListener('dragstart', e => { hideFly(); dragId = id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData(App.DRAG_MIME, id); b.classList.add('drag'); });
       b.addEventListener('dragend', () => { dragId = null; b.classList.remove('drag'); tb.querySelectorAll('.over-top,.over-bot').forEach(x => x.classList.remove('over-top', 'over-bot')); });
       b.addEventListener('dragover', e => {
         if (!dragId || dragId === id) return;
@@ -810,13 +829,17 @@
         e.preventDefault();
         if (!dragId || dragId === id) return;
         const after = b.classList.contains('over-bot');
-        const ids = [...tb.querySelectorAll('.tool-btn')].map(x => x.dataset.tool).filter(x => x !== dragId);
+        const ids = [...tb.querySelectorAll('.tool-btn[data-tool]')].map(x => x.dataset.tool).filter(x => x !== dragId);
         ids.splice(ids.indexOf(id) + (after ? 1 : 0), 0, dragId);
         App.setPref('toolOrder', ids);
         UI.buildToolbar();
       });
       tb.appendChild(b);
     }
+    // en altta destek düğmesi (ana ekrandaki "Support Pixtape" gibi)
+    const sup = h('button', { class: 'tool-btn tb-support', title: 'Support Pixtape', onclick: e => { if (e.detail) sup.blur(); App.actions.support(); } });
+    sup.innerHTML = App.heartIcon(22) + '<span>Support</span>';
+    tb.appendChild(sup);
     tb.oncontextmenu = e => {
       e.preventDefault();
       UI.menu(null, [
@@ -975,11 +998,45 @@
     return out;
   };
 
-  const BLENDS = [
-    ['source-over', 'Normal'], ['multiply', 'Multiply (darken)'], ['screen', 'Screen (lighten)'], ['overlay', 'Overlay'],
-    ['soft-light', 'Soft Light'], ['color', 'Color'],
+  // Karışım modları, sonucuna göre gruplanmış (tuvalin kendi birleştirme modları; dışa aktarmada da aynı sonuç)
+  const BLEND_GROUPS = [
+    [null, [['source-over', 'Normal']]],
+    ['Darkening', [['darken', 'Darken'], ['multiply', 'Multiply'], ['color-burn', 'Color Burn']]],
+    ['Lightening', [['lighten', 'Lighten'], ['screen', 'Screen'], ['color-dodge', 'Color Dodge'], ['lighter', 'Linear Dodge (Add)']]],
+    ['Contrast', [['overlay', 'Overlay'], ['soft-light', 'Soft Light'], ['hard-light', 'Hard Light']]],
+    ['Comparison', [['difference', 'Difference'], ['exclusion', 'Exclusion']]],
+    ['Color Components', [['hue', 'Hue'], ['saturation', 'Saturation'], ['color', 'Color'], ['luminosity', 'Luminosity']]],
   ];
-  UI.BLENDS = BLENDS;
+  UI.BLENDS = BLEND_GROUPS.map(([group, options]) => (group ? { group, options } : options)).flat(1);
+  const blendName = v => (BLEND_GROUPS.flatMap(g => g[1]).find(b => b[0] === (v || 'source-over')) || [0, 'Normal'])[1];
+  /* Karışım modu seçici: tarayıcının açılır listesi yerine kendi menümüz (uzun listede fare girince kendiliğinden
+     kaymaz). Fareyle bir modun üstüne gelince katman o modla önizlenir; seçmeden kapatılırsa eski moda döner.
+     o: { get: () => katman, onChange: mod } */
+  UI.blendPicker = o => {
+    const lbl = h('span', { class: 'bp-label' }, 'Normal');
+    const btn = h('button', { class: 'blend-pick', type: 'button', title: 'Blend Mode' }, lbl, h('span', { class: 'bp-arrow', html: App.icon('chevDown', 14) }));
+    let cur = 'source-over';
+    const set = v => { cur = v || 'source-over'; lbl.textContent = blendName(cur); };
+    btn.onclick = () => {
+      const L = o.get();
+      if (!L) return;
+      const orig = L.blend || 'source-over';
+      let picked = false;
+      const preview = v => { if (L.blend !== v) { L.blend = v; App.requestRender(); } };
+      const items = [];
+      for (const [group, opts] of BLEND_GROUPS) {
+        if (group) items.push({ header: group });
+        for (const [v, t] of opts) items.push({ label: t, checked: v === orig, onHover: () => preview(v), onClick: () => { picked = true; L.blend = orig; o.onChange(v); } });
+      }
+      const r = btn.getBoundingClientRect(), up = r.top > innerHeight - r.bottom;
+      UI.menu(btn, items, {
+        up, right: true, cls: up ? 'blend-menu up' : 'blend-menu', minWidth: Math.max(200, r.width),
+        onLeave: () => preview(orig),
+        onClose: () => { if (!picked) preview(orig); },
+      });
+    };
+    return { el: btn, set };
+  };
 
   // Çoklu katman seçimi (Ctrl / Shift + tıklama) - birleştirme için
   const multi = new Set();
@@ -1062,9 +1119,9 @@
   UI.buildLayers = () => {
     const root = document.getElementById('layers');
     const list = h('div', { class: 'ly-list' });
-    const blend = h('select', { class: 'ly-blend', title: 'Blend Mode' }, BLENDS.map(([v, t]) => h('option', { value: v }, t)));
+    const blend = UI.blendPicker({ get: () => App.activeLayer(), onChange: v => { const A = App.activeLayer(); if (A) { A.blend = v; blend.set(v); App.commit('Blend Mode'); } } });
     const op = UI.slider({ label: 'Opacity', min: 0, max: 100, value: 100, def: 100, compact: true });
-    const props = h('div', { class: 'ly-props' }, h('div', { class: 'ly-blend-row' }, blend), op.el);
+    const props = h('div', { class: 'ly-props' }, h('div', { class: 'ly-blend-row' }, blend.el), op.el);
     const mergeMenu = anchor => UI.menu(anchor, [
       { label: 'Merge Selected Layers', icon: 'merge', key: 'Ctrl+click', disabled: UI.selectedLayers().length < 2, onClick: () => App.actions.mergeSelected() },
       { label: 'Merge Down', icon: 'mergeDown', key: K('mergeDown'), onClick: () => App.actions.mergeDown() },
@@ -1077,6 +1134,7 @@
       { label: 'Text', icon: 'text', onClick: () => { App.setTool('text').then(() => App.tools.text.addDefault()); } },
       { label: 'Shape', icon: 'shape', onClick: () => { App.setTool('element'); } },
       { label: 'Solid Color Fill', icon: 'bucket', onClick: () => App.actions.fillLayer() },
+      { label: 'Background…', icon: 'back', onClick: () => App.actions.addBackground() },
     ];
     const addBtn = UI.iconBtn('plus', 'Add Layer', e => UI.menu(e.currentTarget, addItems(), { up: true }));
     // Listenin boş yerine sağ tık: katman ekleme menüsü; sol tık: seçimi kaldır
@@ -1140,7 +1198,7 @@
     root.innerHTML = '';
     root.append(list, paper, props, foot);
 
-    let dragId = null, ph = null;
+    let dragId = null, ph = null, grabY = 0;
     /* Sıralama: sürüklenen satır listeden çekilir, bırakılacağı yerde kesik çizgili boş bir kutu açılır ve alttaki
        satırlar aşağı kayar; kullanıcı katmanın tam nereye gireceğini görür. Kutunun yeri imlecin, satırların ortasına
        göre konumuyla belirlenir. Listenin altındaki boşluğa bırakmak en alta koyar. */
@@ -1171,15 +1229,24 @@
       let next = ph.nextElementSibling;
       while (next && !next.classList.contains('ly-row')) next = next.nextElementSibling;
       const rows = liveRows(), s = next ? { row: next, above: true } : rows.length ? { row: rows[rows.length - 1], above: false } : null;
-      clearMark();
-      if (!s) return;
-      const i = d.layers.findIndex(l => l.id === id), j = d.layers.findIndex(l => l.id === s.row.dataset.id);
-      if (i < 0 || j < 0 || i === j) return;
+      const i = d.layers.findIndex(l => l.id === id), j = s ? d.layers.findIndex(l => l.id === s.row.dataset.id) : -1;
       // dizide üst = büyük indeks; i çıkarılınca j'den sonrakiler bir kayar
-      const to = s.above ? (i < j ? j : j + 1) : (i < j ? j - 1 : j);
-      if (to === i) return;
-      App.moveLayer(id, to);
-      App.commit('Layer Order');
+      const to = i < 0 || j < 0 || i === j ? i : s.above ? (i < j ? j : j + 1) : (i < j ? j - 1 : j);
+      const move = () => { if (i >= 0 && to !== i) { App.moveLayer(id, to); App.commit('Layer Order'); } };
+      // satır, kutunun yerine konur ve bırakıldığı yerden oraya kayar; liste eski sırayı bir an bile göstermez
+      const row = list.querySelector('.ly-row.drag-hide');
+      if (!row) { clearMark(); move(); return; }
+      ph.replaceWith(row); ph = null;
+      row.classList.remove('drag-hide');
+      const dy = e.clientY - grabY - row.getBoundingClientRect().top;
+      if (!App.motion() || !dy) { move(); return; }
+      row.classList.add('ly-land');
+      const anim = row.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      // animasyon bitmese de (ör. sekme arka plandaysa) sıra mutlaka kaydedilir
+      let done = false;
+      const fin = () => { if (done) return; done = true; row.classList.remove('ly-land'); move(); };
+      anim.onfinish = anim.oncancel = fin;
+      setTimeout(fin, 260);
     });
     const refresh = () => {
       list.innerHTML = '';
@@ -1211,7 +1278,8 @@
         row.dataset.id = L.id;
         // veri yazılmazsa tarayıcı sürüklemeyi "bırakılamaz" sayar ve imleç yasak işaretine döner
         row.addEventListener('dragstart', e => {
-          dragId = L.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', L.name || 'layer');
+          dragId = L.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData(App.DRAG_MIME, 'layer');
+          grabY = e.clientY - row.getBoundingClientRect().top;
           // satır, sürükleme resmi alındıktan sonra gizlenir; yerinde aynı boyda kesik çizgili kutu açılır
           const hgt = row.offsetHeight;
           setTimeout(() => { if (dragId !== L.id) return; ph = h('div', { class: 'ly-ph' }); ph.style.height = hgt + 'px'; row.after(ph); row.classList.add('drag-hide'); }, 0);
@@ -1222,9 +1290,8 @@
       syncPaper();
       const A = App.activeLayer();
       props.classList.toggle('dim', !A);
-      if (A) { blend.value = A.blend || 'source-over'; op.set(Math.round(A.opacity * 100)); }
+      if (A) { blend.set(A.blend); op.set(Math.round(A.opacity * 100)); }
     };
-    blend.onchange = () => { const A = App.activeLayer(); if (A) { A.blend = blend.value; App.commit('Blend Mode'); } };
     let opTimer;
     op.el.querySelector('input[type=range]').addEventListener('input', () => {
       const A = App.activeLayer(); if (!A) return;

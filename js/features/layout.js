@@ -228,7 +228,9 @@
     // Araç değişince sekme adı güncellenir; araç paneli bir sekmedeyse öne gelir
     onTool() {
       if (document.body.classList.contains('tp-hidden')) L.toggleToolPanel(true); // başka araca geçilince panel yine açılır
-      if (L.isMobile()) { if (document.body.classList.contains('at-editor')) L.sheet(true); document.querySelectorAll('.rp-tab[data-pane="tool"]').forEach(b => { b.innerHTML = App.icon(paneIcon('tool'), 16) + `<span>${App.t(paneName('tool'))}</span>`; }); return; }
+      // telefonda çekmece yalnızca araç düğmesine basınca açılır; tuvalde bir katmana dokunup araç kendiliğinden
+      // değişince açılmaz (açılsa çalışma alanı küçülür, resim kayar ve panel ekranı kaplar)
+      if (L.isMobile()) { document.querySelectorAll('.rp-tab[data-pane="tool"]').forEach(b => { b.innerHTML = App.icon(paneIcon('tool'), 16) + `<span>${App.t(paneName('tool'))}</span>`; }); return; }
       const cols = L.get(), f = findPane(cols, 'tool');
       if (f && f.g.t.length > 1 && f.g.a !== 'tool') { f.g.a = 'tool'; L.save(cols); return; }
       document.querySelectorAll('.rp-tab[data-pane="tool"]').forEach(b => { b.innerHTML = App.icon(paneIcon('tool'), 16) + `<span>${App.t(paneName('tool'))}</span>`; });

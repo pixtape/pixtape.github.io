@@ -384,33 +384,6 @@
       if (L && L.type === 'raster') T.begin(L);
     },
 
-    // Seçili katmanın altına yeni arka plan ekle
-    async backdrop(kind, color) {
-      if (T.dirty) await T.apply();
-      const L = App.activeLayer();
-      if (!L) return;
-      const d = App.doc;
-      let c;
-      if (kind === 'blur') {
-        c = App.IMG.blur(App.composite({ layers: [L] }), Math.max(d.w, d.h) * 0.02);
-        // saydam bölgeleri orijinal (kesilmemiş) ile doldur
-        const base = App.history.stack[0] ? App.composite({ layers: App.history.stack[0].state.layers }) : null;
-        if (base) c = App.IMG.blur(base, Math.max(d.w, d.h) * 0.025);
-      } else {
-        c = U.canvas(d.w, d.h);
-        const x = c.getContext('2d');
-        if (kind === 'gradient') {
-          const g = x.createLinearGradient(0, 0, d.w, d.h);
-          g.addColorStop(0, color[0]); g.addColorStop(1, color[1]);
-          x.fillStyle = g;
-        } else x.fillStyle = color;
-        x.fillRect(0, 0, d.w, d.h);
-      }
-      const idx = d.layers.indexOf(L);
-      App.addLayer(App.newLayer(c, { name: 'New Background' }), { index: idx, select: false });
-      App.commit('Add Background');
-    },
-
     panel(body) {
       if (T.mode === 'color') T.mode = 'magic';
       const modes = UI.seg({
@@ -465,16 +438,6 @@
           UI.button('Invert', () => T.invert(), { small: true }),
           UI.button('Reset', () => T.resetMask(), { small: true })),
       ]));
-      const bgc = UI.color({ label: 'Color', value: '#ffffff', onInput: () => {} });
-      body.appendChild(UI.section('Add New Background', [
-        h('div', { class: 'btn-row wrap' },
-          UI.button('White', () => T.backdrop('color', '#ffffff'), { small: true }),
-          UI.button('Black', () => T.backdrop('color', '#000000'), { small: true }),
-          UI.button('Blurred', () => T.backdrop('blur'), { small: true }),
-          UI.button('Gradient', () => T.backdrop('gradient', ['#6c5cff', '#00c2ff']), { small: true })),
-        bgc.el,
-        UI.button('Add with Selected Color', () => T.backdrop('color', bgc.get()), { small: true, block: true }),
-      ], { open: false }));
     },
   };
 

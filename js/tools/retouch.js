@@ -127,7 +127,7 @@
 
   const MODES = [
     ['spot', 'Blemish', 'retouch', 'Remove spots and blemishes by clicking or painting over them.'],
-    ['object', 'Erase Object', 'wand', 'Paint over the object you want to remove.'],
+    ['object', 'Erase', 'wand', 'Paint over the object you want to remove.'],
     ['clone', 'Clone', 'stamp', 'First click the spot to copy from (source). Then it is copied wherever you paint. Alt + click to change the source.'],
     ['skin', 'Skin', 'sun', 'Smooths skin where you paint.'],
     ['blur', 'Blurred', 'droplet', 'Blurs the area you paint.'],

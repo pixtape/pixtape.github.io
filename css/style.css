@@ -137,6 +137,32 @@ span.dt-thumb { background: none; }
 .tool-btn:hover { background: var(--panel2); color: var(--text); }
 .tool-btn.on { background: var(--accent-soft); color: var(--text); }
 .tool-btn.on .ico { color: var(--accent); }
+/* masaüstünde üzerine gelme göstergesi mor şerittir; şerit kalkınca altta solmakta olan gri zemin bir an parlayıp titremesin */
+body:not(.mobile) .tool-btn[data-tool] { transition: none; }
+body:not(.mobile) .tool-btn[data-tool]:hover:not(.on) { background: none; }
+/* araç çubuğunun en altındaki destek düğmesi */
+.tool-btn.tb-support { margin-top: auto; flex-direction: column; gap: 2px; width: 56px; height: 50px; font-size: 9px; white-space: nowrap; font-weight: 600; letter-spacing: .02em; color: var(--text3); }
+.tool-btn.tb-support .ico { color: #ff5a8a; }
+/* üzerine gelme zemini yumuşak gelir ve daha yavaş söner: fare kenardan hızlıca girip çıkınca
+   zemin ve yazı yanıp sönmez, aradaki bir tonda yumuşakça kalır */
+.tool-btn.tb-support { transition: background-color .3s ease-out, color .3s ease-out; }
+.tool-btn.tb-support:hover { background-color: var(--panel2); color: var(--text); transition: background-color .18s ease-in, color .18s ease-in; }
+.sup-heart { position: relative; display: inline-flex; flex: none; will-change: transform; }
+.sup-heart > svg { position: relative; }
+.sup-heart .sh-body { fill: #ff3b78; fill-opacity: 0; }
+/* parıltı filter ile değil, arkadaki yumuşak ışığın saydamlığıyla verilir; kalp ve ışık hep kendi katmanında durur.
+   Böylece animasyon başlarken ve biterken katman açılıp kapanmaz, kalp ile yanındaki yazı bir an parlayıp titremez */
+.sup-heart .sh-glow { position: absolute; inset: -45%; border-radius: 50%; pointer-events: none; opacity: 0; will-change: opacity;
+  background: radial-gradient(closest-side, rgba(255,59,120,.55), rgba(255,59,120,.18) 55%, rgba(255,59,120,0)); }
+/* üstüne gelince bir kez oynar: kalp dolar, atar, parlar, üzerinden beyazımsı ışık geçer ve ilk haline yumuşakça döner.
+   Sınıfı JS ekler ve animasyon bitince kaldırır; fare erken çıksa da yarıda kesilmez */
+.sup-heart.beat { animation: supbeat 1.4s ease-in-out; }
+.sup-heart.beat .sh-body { animation: supfill 1.4s ease-in-out; }
+.sup-heart.beat .sh-glow { animation: supglow 1.4s ease-in-out; }
+@keyframes supbeat { 0%, 100% { transform: scale(1); } 16% { transform: scale(1.22); } 30% { transform: scale(1.06); } 44% { transform: scale(1.18); } 70% { transform: scale(1.04); } }
+@keyframes supfill { 0% { fill-opacity: 0; } 14%, 70% { fill-opacity: 1; } 100% { fill-opacity: 0; } }
+@keyframes supglow { 0%, 100% { opacity: 0; } 16%, 44% { opacity: 1; } 30% { opacity: .7; } 70% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .sup-heart.beat, .sup-heart.beat .sh-body, .sup-heart.beat .sh-glow { animation: none; } }
 /* araç düğmesinin üzerine gelince açılan mor şerit: simge + ad + kısayol */
 .tool-fly {
   position: fixed; z-index: 900; display: flex; align-items: center; gap: 10px; padding: 0 14px 0 10px;
@@ -523,6 +549,20 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
 .ly-props { padding: 6px 10px; border-top: 1px solid var(--line); }
 .ly-props.dim { opacity: .4; pointer-events: none; }
 .ly-blend-row select { padding: 5px 8px; font-size: 12px; }
+/* karışım modu seçici (açılır liste görünümünde düğme) */
+.blend-pick { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; color: var(--text); text-align: left; cursor: pointer; }
+.blend-pick:hover, .blend-pick:focus-visible { border-color: var(--accent); outline: none; }
+.ly-blend-row .blend-pick { padding: 5px 8px; font-size: 12px; }
+.blend-pick .bp-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blend-pick .bp-arrow { display: flex; color: var(--text3); flex: none; }
+.blend-menu .menu-item { padding-top: 4px; padding-bottom: 4px; font-size: 13px; }
+.blend-menu .menu-head { padding-top: 5px; }
+/* düğmeden yukarı doğru kayarak açılır */
+.blend-menu { animation: bmdown .16s cubic-bezier(.25,.8,.25,1); transform-origin: top center; }
+.blend-menu.up { animation-name: bmup; transform-origin: bottom center; }
+@keyframes bmup { from { opacity: 0; transform: translateY(10px) scaleY(.96); } to { opacity: 1; transform: none; } }
+@keyframes bmdown { from { opacity: 0; transform: translateY(-10px) scaleY(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .blend-menu { animation: none; } }
 .ly-foot { display: flex; justify-content: space-around; padding: 4px; border-top: 1px solid var(--line); }
 
 .hs-row { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; text-align: left; padding: 7px 8px; border-radius: 8px; color: var(--text2); font-size: 13.5px; }
@@ -1015,7 +1055,7 @@ kbd { background: var(--panel3); border: 1px solid var(--line2); border-bottom-w
    Katmanlar / Geçmiş sağdan açılan çekmece. Dokunmayla kullanım için düğmeler büyür, fareye özgü düğmeler gizlenir. */
 #btnLayersM { display: none; }
 body.mobile {
-  --m-bar: 58px; --m-head: 50px;
+  --m-bar: 58px; --m-head: 50px; --m-sheet: min(42vh, 400px);
 }
 body.mobile #topbar { padding: 0 6px; gap: 4px; }
 body.mobile .brand b { display: none; }
@@ -1026,7 +1066,7 @@ body.mobile #topbar .spacer, body.mobile #btnHelp { display: none; }
 body.mobile #btnSave2 span { display: none; }
 body.mobile #btnLayersM { display: flex; }
 body.mobile #workspace { position: relative; padding-bottom: calc(var(--m-bar) + var(--m-head)); }
-body.mobile.m-open #workspace { padding-bottom: calc(var(--m-bar) + 46vh); }
+body.mobile.m-open #workspace { padding-bottom: calc(var(--m-bar) + var(--m-sheet)); }
 body.mobile #toolbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; width: auto; height: var(--m-bar);
   flex-direction: row; justify-content: flex-start; padding: 0 6px; gap: 2px; overflow-x: auto; overflow-y: hidden;
@@ -1034,13 +1074,17 @@ body.mobile #toolbar {
 }
 body.mobile #toolbar::-webkit-scrollbar { display: none; }
 body.mobile .tool-btn { width: 46px; height: 46px; }
+/* telefonda araç düğmeleri satırı tam doldurur, aralarındaki boşluk eşittir; sığmazsa yine kaydırılır */
+body.mobile #toolbar { justify-content: space-between; gap: 0; }
+body.mobile #toolbar .tool-btn[data-tool] { flex: 1 1 0; width: auto; min-width: 36px; max-width: 52px; }
+body.mobile .tool-btn.tb-support { display: none; }
 body.mobile .pane-resizer { display: none; }
 body.mobile .dock-col.m-tool {
   position: fixed; left: 0; right: 0; bottom: var(--m-bar); z-index: 35; height: var(--m-head);
   border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.35);
   transition: height .2s ease; overflow: hidden;
 }
-body.mobile.m-open .dock-col.m-tool { height: 46vh; }
+body.mobile.m-open .dock-col.m-tool { height: var(--m-sheet); }
 body.mobile .m-tool .tp-head { cursor: pointer; position: relative; padding-top: 14px; }
 body.mobile .m-tool .tp-head::before { content: ''; position: absolute; left: 50%; top: 5px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line); }
 body.mobile .dock-col.m-sidebar {
@@ -1077,3 +1121,9 @@ body.mobile .icon-btn { min-width: 36px; min-height: 36px; }
 #bottombar::-webkit-scrollbar { display: none; }
 #bottombar .bb-group { flex: none; }
 #bottombar .bb-group:first-child { overflow: visible; }
+.bg-add { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bg-add > .note { margin: 0; white-space: nowrap; }
+.bg-presets { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+.bg-presets .qc-btn { width: auto; height: auto; aspect-ratio: 1; max-width: 26px; }
+.ly-row.ly-land { z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.ly-row.ly-land:not(.on) { background: var(--panel2); }

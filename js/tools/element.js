@@ -719,7 +719,7 @@
     overlayProps(L) {
       return { title: App.t('Selected overlay: {0}', App.t(L.name)), extra: UI.iconBtn('trash', 'Remove Overlay', () => { App.removeLayer(L.id); App.commit('Remove Overlay'); UI.rebuildPanel(); }), kids: [
         UI.slider({ label: 'Opacity', min: 0, max: 100, value: Math.round(L.opacity * 100), onInput: v => { L.opacity = v / 100; App.requestRender(); }, onChange: () => { App.commit('Overlay Opacity'); } }).el,
-        UI.select({ label: 'Mix', options: UI.BLENDS, value: L.blend, onChange: v => { L.blend = v; App.commit('Blend Mode'); } }).el,
+        (() => { const bp = UI.blendPicker({ get: () => L, onChange: v => { L.blend = v; bp.set(v); App.commit('Blend Mode'); } }); bp.set(L.blend); return h('div', { class: 'field' }, h('label', { class: 'fld-label' }, 'Mix'), bp.el); })(),
         UI.button('New Random Layout', () => { L.overlay.seed = Math.floor(Math.random() * 1e5); renderOverlay(L); App.commit('Overlay'); }, { small: true, icon: 'dice' }),
       ] };
     },

@@ -107,7 +107,7 @@
             h('div', { class: 'gif-fr-acts' },
               h('button', { title: 'Duplicate', html: App.icon('copy', 13), onclick: e => { e.stopPropagation(); st.frames.splice(i + 1, 0, { ...f }); renderStrip(); changed(); } }),
               h('button', { title: 'Delete', html: App.icon('trash', 13), onclick: e => { e.stopPropagation(); st.frames.splice(i, 1); st.sel = -1; renderStrip(); changed(); } })));
-          card.addEventListener('dragstart', e => { dragI = i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'fr'); card.classList.add('drag'); });
+          card.addEventListener('dragstart', e => { dragI = i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData(App.DRAG_MIME, 'fr'); card.classList.add('drag'); });
           card.addEventListener('dragend', () => card.classList.remove('drag'));
           card.addEventListener('dragover', e => { if (dragI >= 0) { e.preventDefault(); card.classList.add('over'); } });
           card.addEventListener('dragleave', () => card.classList.remove('over'));

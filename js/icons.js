@@ -142,6 +142,30 @@
   };
   App.icon = (name, size = 20, extra = '') =>
     `<svg class="ico ${extra}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${P[name] || P.info}</svg>`;
+  // destek kalbi: üstüne gelince bir kez atar, parlar ve üzerinden ışık geçer (style.css .sup-heart)
+  // Işık, kalbin üstüne çizilen ikinci bir kalbin renk geçişidir; yalnızca geçiş kayar. Kırpma ya da maske olmadığı için
+  // küçük boyda kenar çizgisi ya da titreme oluşmaz. Bant başta ve sonda kalbin dışındadır (görünmez).
+  let heartN = 0;
+  App.heartIcon = size => {
+    const n = ++heartN, d = P.heart.match(/d="([^"]+)"/)[1];
+    return `<span class="sup-heart"><i class="sh-glow"></i><svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">`
+      + `<defs><linearGradient id="shg${n}" x1="0" y1="0" x2="1" y2=".35" gradientTransform="translate(-.95 0)">`
+      + `<stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".85"/><stop offset=".62" stop-color="#fff" stop-opacity="0"/>`
+      + `<animateTransform attributeName="gradientTransform" type="translate" from="-.95 0" to=".95 0" dur=".76s" begin="indefinite" fill="remove"/></linearGradient></defs>`
+      + `<path class="sh-body" d="${d}"/><path d="${d}" fill="url(#shg${n})" stroke="none"/></svg></span>`;
+  };
+  document.addEventListener('pointerover', e => {
+    const b = e.target.closest && e.target.closest('.tb-support, .hn-support');
+    const hr = b && b.querySelector('.sup-heart');
+    // yalnızca düğmeye dışarıdan girilince oynar; içindeki simge ile yazı arasında gezinmek yeniden başlatmaz
+    if (!hr || hr.classList.contains('beat') || (e.relatedTarget && b.contains(e.relatedTarget))) return;
+    hr.classList.add('beat');
+    const sh = hr.querySelector('animateTransform');
+    if (sh && App.motion()) try { sh.beginElementAt(0.28); } catch (err) { /* */ }
+    // animasyon kapalıysa bitiş olayı gelmez; sınıf yine de kalkar ki sonraki üzerine gelişte tekrar oynasın
+    clearTimeout(hr._t); hr._t = setTimeout(() => hr.classList.remove('beat'), 1600);
+  });
+  document.addEventListener('animationend', e => { if (e.animationName === 'supbeat') e.target.classList.remove('beat'); });
   App.iconEl = (name, size, extra) => {
     const s = document.createElement('span');
     s.className = 'ico-wrap';
