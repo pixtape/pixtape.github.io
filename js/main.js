@@ -246,7 +246,7 @@
     return `<svg viewBox="0 0 48 48" width="100%" height="100%"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#00c2ff"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="12" fill="url(#${id})"/><circle cx="24" cy="26.7" r="10" fill="none" stroke="#fff" stroke-width="3.2"/><circle cx="24" cy="26.7" r="3.6" fill="#fff"/><path d="M15 14.2h5l2.5-3h5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   };
   App.logoSVG = logoSVG;
-  App.VERSION = '1.0';
+  App.VERSION = '1.1';
   // Proje dosyası uzantısı
   App.PROJECT_RE = /\.pixtape$/i;
   // Bağış bağlantısı ("Pixtape'i destekleyin" penceresindeki düğme). Boş bırakılırsa düğme gösterilmez.
