@@ -22,16 +22,36 @@
     },
     begin(L) {
       T.L = L;
-      T.orig = L.canvas;
+      // Daha önce kesilmiş ve o zamandan beri başka türlü değişmemiş katmanda kesimin orijinali ve maskesi kullanılır:
+      // "Geri getir" fırçası kesilen yerleri orijinalden geri getirir (kesilmiş hâl orijinal sayılmaz)
+      const cut = T.cutOf(L);
+      T.orig = cut ? cut.src : L.canvas;
       T.od = U.getData(T.orig);
       const n = T.orig.width * T.orig.height;
-      T.mask = new Uint8ClampedArray(n).fill(255);
+      T.mask = cut ? T.maskFrom(cut.mask) : new Uint8ClampedArray(n).fill(255);
       T.pv = U.clone(T.orig);
       T.pvx = T.pv.getContext('2d');
       T.dirty = false;
       T.hist = [T.mask.slice()]; T.hpos = 0;
       App.preview = { layer: L, canvas: T.pv };
+      if (cut) T.update();
       App.requestRender();
+    },
+    // Katmanın geçerli kesim kaydı (kesimden sonra katmanın pikselleri başka bir işlemle değiştiyse yok sayılır)
+    cutOf(L) {
+      const c = L.cut;
+      return c && L.canvas._cutTok === c.tok && c.src.width === L.canvas.width && c.src.height === L.canvas.height ? c : null;
+    },
+    maskFrom(cv) {
+      const d = U.getData(cv).data, m = new Uint8ClampedArray(cv.width * cv.height);
+      for (let i = 0; i < m.length; i++) m[i] = d[i * 4 + 3];
+      return m;
+    },
+    maskCanvas(m, W, H) {
+      const c = U.canvas(W, H), x = c.getContext('2d'), id = x.createImageData(W, H);
+      for (let i = 0; i < m.length; i++) id.data[i * 4 + 3] = m[i];
+      x.putImageData(id, 0, 0);
+      return c;
     },
     end() {
       if (App.preview && App.preview.layer === T.L) App.preview = null;
@@ -339,7 +359,12 @@
     async apply() {
       if (!T.L || !T.dirty) return;
       const L = T.L;
+      const src = T.orig, W = src.width, H = src.height, mask = T.mask.slice();
       await App.busy('Applying…', () => { L.canvas = T.buildResult(); });
+      // orijinal ve maske katmanla saklanır; araç sonra yeniden açılınca kesim bu orijinalden sürdürülür
+      const tok = U.uid();
+      L.canvas._cutTok = tok;
+      L.cut = { src, mask: T.maskCanvas(mask, W, H), tok };
       T.end();
       App.commit('Remove Background');
       T.begin(L);

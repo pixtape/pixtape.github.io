@@ -34,9 +34,15 @@
     const layers = [];
     for (const L of list) {
       const o = App.cloneLayer(L);
-      delete o.canvas; delete o.fillImg;
+      delete o.canvas; delete o.fillImg; delete o.cut;
       o.png = toDataURL ? L.canvas.toDataURL('image/png') : await canvasBlob(L.canvas);
       if (L.fillImg) o.fillPng = toDataURL ? L.fillImg.toDataURL('image/png') : await canvasBlob(L.fillImg);
+      // kesip çıkarmanın orijinali ve maskesi (katman o zamandan beri değişmediyse)
+      if (L.cut && L.canvas._cutTok === L.cut.tok) {
+        o.cutTok = L.cut.tok;
+        o.cutSrc = toDataURL ? L.cut.src.toDataURL('image/png') : await canvasBlob(L.cut.src);
+        o.cutMask = toDataURL ? L.cut.mask.toDataURL('image/png') : await canvasBlob(L.cut.mask);
+      }
       if (L.children) o.children = await serLayers(L.children, toDataURL);
       layers.push(o);
     }
@@ -52,7 +58,11 @@
       const src = o.png;
       const c = typeof src === 'string' ? await U.urlToCanvas(src) : await blobToCanvas(src);
       const L = { ...o, canvas: c };
-      delete L.png; delete L.fillPng;
+      delete L.png; delete L.fillPng; delete L.cutSrc; delete L.cutMask; delete L.cutTok;
+      if (o.cutSrc && o.cutMask) {
+        const ld = s => (typeof s === 'string' ? U.urlToCanvas(s) : blobToCanvas(s));
+        try { L.cut = { src: await ld(o.cutSrc), mask: await ld(o.cutMask), tok: o.cutTok }; c._cutTok = o.cutTok; } catch (e) { /* */ }
+      }
       if (o.fillPng) L.fillImg = typeof o.fillPng === 'string' ? await U.urlToCanvas(o.fillPng) : await blobToCanvas(o.fillPng);
       if (o.children) L.children = await deserLayers(o.children);
       layers.push(L);
@@ -91,7 +101,7 @@
       const layers = await deserialize(p);
       if (o.copy) App.newDoc({ w: p.w, h: p.h, name: p.name + ' ' + App.t('copy'), layers, label: 'Project Opened', paper: p.bg || null });
       else App.newDoc({ w: p.w, h: p.h, name: p.name, layers, label: 'Project Opened', id: p.id, paper: p.bg || null });
-      if (p.active && App.layerById(p.active)) App.setActive(p.active);
+      if (p.active && App.layerById(p.active)) App.setActive(p.active, false);
     },
     async has(id) { try { return (await tx('readonly', s => s.getKey(id))) !== undefined; } catch (e) { return true; } },
     async remove(id) { await tx('readwrite', s => s.delete(id)); },

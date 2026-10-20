@@ -454,7 +454,7 @@
       if (c.locked && c.type !== 'frame' && c.type !== 'overlay') c.locked = false;
       if (App.layerRenderers[c.type]) App.layerRenderers[c.type](c);
       App.addLayer(c);
-      App.setActive(c.id);
+      App.setActive(c.id, false);
       App.commit('Paste');
       if (App.tool && App.tool.refresh) App.tool.refresh();
     },
@@ -598,6 +598,7 @@
       App.commit(lock ? 'Lock' : 'Unlock');
       UI.toast(lock ? 'Layer Locked' : 'Layer Unlocked', 'info', 1200);
       App.requestRender();
+      if (UI.refreshLayers) UI.refreshLayers();
     },
     mergeVisible() { if (App.mergeVisible()) { App.commit('Merge Visible'); if (App.tool && App.tool.refresh) App.tool.refresh(); } },
     flatten() { if (!App.doc) return; App.flatten(); App.commit('Flatten'); if (App.tool && App.tool.refresh) App.tool.refresh(); },
@@ -784,7 +785,7 @@
           field('Grid', UI.button(App.t('{0}, change…', A.gridLabel()), e => A.gridMenu(e.currentTarget), { small: true, icon: 'grid' }), 'You can also right-click the grid button in the bottom bar'),
         ]],
         'History and Saving': ['history', () => [
-          field('History Steps', UI.slider({ label: '', min: 10, max: 200, step: 5, value: P.histMax, def: 40, onChange: v => { set('histMax', v); App.emit('history'); } }).el, 'More Uses More Memory'),
+          field('History Steps', UI.slider({ label: '', min: 10, max: 200, step: 5, value: P.histMax, def: 100, onChange: v => { set('histMax', v); App.emit('history'); } }).el, 'More Uses More Memory'),
           tg('autosave', 'Autosave', 'Projects are stored in this browser automatically and listed on the home screen'),
           field('Recent Projects to Keep', (() => {
             const sg = UI.seg({
@@ -995,6 +996,34 @@
     if (App.compare && KS.releases('compare', e)) { App.compare = false; App.requestRender(); }
   });
   window.addEventListener('blur', () => { App.keys.space = false; if (App.compare) { App.compare = false; App.requestRender(); } });
+
+  /* Metin seçilince hemen Metin aracına geçilir (ayarları çok olduğu için); tıklayıp bırakmadan sürüklemeye başlanmışsa
+     taşıma kesilmeden Metin aracında sürer, yani metin baştan Metin aracında seçilmiş gibi olur. Şekil, çerçeve ve
+     kaplamanın az sayıdaki ayarı Düzenle panelinde de durduğundan onlarda araç değişmez. Uygulanmamış değişikliği
+     olan araçtan geçilmez. */
+  const TOOL_FOR = { text: 'text' };
+  const switchKeepDrag = id => {
+    const drag = App.pointerDown ? App.xform.drag : null;
+    App.setTool(id);
+    // önceki araç kapanırken sürüklemeyi sıfırlar; yeni araç aynı ortak taşıma denetimini kullanır
+    if (drag && App.pointerDown && App.tool === App.tools[id]) App.xform.drag = drag;
+  };
+  App.on('picked', () => {
+    const L = App.activeLayer(), id = L && TOOL_FOR[L.type], t = App.tool;
+    if (!id || !App.tools[id] || (t && t.isDirty && t.isDirty()) || (t && t.id === id)) return;
+    if (UI.selectedLayers().length > 1) return; // birden çok katman seçildiyse (ör. seçim kutusuyla) araç değişmez
+    switchKeepDrag(id);
+  });
+  // Metin bırakılınca (seçim kalkınca ya da metin olmayan bir katman seçilince) her zaman Düzenle aracına geçilir
+  let wasText = false;
+  App.on('active', () => {
+    const L = App.activeLayer(), isText = !!L && L.type === 'text', left = wasText && !isText;
+    wasText = isText;
+    const t = App.tool;
+    if (!left || !t || t.id !== 'text' || (t.isDirty && t.isDirty())) return;
+    // hemen geçilir: Metin aracının paneli (şablonlar) ekrana hiç çizilmeden Düzenle paneli gelir
+    switchKeepDrag('arrange');
+  });
   /* ------------------------------------------------------------ sürükle-bırak & yapıştır */
   const dropOverlay = () => document.getElementById('dropOverlay');
   let dragDepth = 0;

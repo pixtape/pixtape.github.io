@@ -118,12 +118,12 @@
   /* İmleç bir nesnenin tutamaç kutusunun içindeyse o nesne seçilir; kutular üst üste biniyorsa en üstteki gelir.
      Tamamen boş katmanlar tuvalden seçilmez (tıklama alttakilere geçer); Katmanlar panelinden seçilip içine çizilir,
      çizim yapılınca kutusu çizimi sarar ve tuvalden de seçilir. Boş arka plan (en alttaki katman) seçilebilir.
-     Kilitli katmanlar da atlanır. */
+     Kilitli katmanlar ve tuvali kaplayan kaplamalar da atlanır (kaplama seçiliyse içinden sürüklenerek taşınır). */
   const pickAt = p => {
     const ly = App.doc.layers;
     for (let i = ly.length - 1; i >= 0; i--) {
       const L = ly[i];
-      if (L.visible && !L.locked && inFrame(L, p) && (i === 0 || !isBlank(L))) return L;
+      if (L.visible && !L.locked && L.type !== 'overlay' && inFrame(L, p) && (i === 0 || !isBlank(L))) return L;
     }
     return null;
   };
@@ -310,7 +310,7 @@
     hoverL: null,
 
     activate() { T.refresh(); },
-    deactivate() { X.drag = null; T.pend = null; },
+    deactivate() { X.drag = null; T.pend = null; T.marq = null; },
 
     onDown(p, e) {
       const L = App.activeLayer();
@@ -318,7 +318,11 @@
       // tutamaçlar önce gelir (Ctrl / Shift ile boyutlandırma ve döndürme olduğu gibi çalışır)
       if (X.grab(L, p)) return;
       // imlecin bulunduğu tutamaç kutusunun nesnesi (bkz. pickAt)
-      const target = pickAt(p);
+      let target = pickAt(p);
+      const ly = App.doc.layers;
+      // seçili katman kutusunun içinden sürüklenince taşınır (tuvalden seçilmeyen kaplama ya da içi tamamen silinmiş
+      // boş katman da); üstünde görünen başka bir katman varsa o seçilir
+      if (L && L.visible && !L.locked && inside(L, p) && (!target || ly.indexOf(L) > ly.indexOf(target))) target = L;
       // Ctrl / Shift + tıklama: katmanı seçime ekler ya da çıkarır. Fare sürüklenirse taşımadır
       // (Ctrl ile sürüklemek hizalamayı kapatır, Shift ile sürüklemek tek eksende taşır; bunlar bozulmasın)
       if (add) {
@@ -326,20 +330,24 @@
         if (target) T.pend = { target, L, p0: { sx: p.sx, sy: p.sy }, p };
         return;
       }
-      // boş yere tıklanınca seçim kalkar
-      if (!target) { X.drag = null; if (L) { App.setActive(null); T.refresh(); } return; }
+      // Boş yerden (saydam alan ya da tuvalin dışı) sürükleyince seçim kutusu açılır, kutunun değdiği katmanlar seçilir;
+      // sürüklemeden bırakılırsa seçim kalkar
+      if (!target) { X.drag = null; T.marq = { a: p, b: p, L }; return; }
       const sel = UI.selectedLayers();
       if (target !== L && !(sel.length > 1 && sel.includes(target))) { App.setActive(target.id); T.refresh(); }
       else if (target !== L) UI.selectLayerKeep(target.id);
       T.beginMove(target, p);
     },
-    beginMove(target, p) {
+    beginMove(target, p) { T.moveSel(target, p); },
+    // tıklanan katmanı taşımaya başlar; birden çok katman seçiliyse hepsi birlikte taşınır (Metin aracı da kullanır)
+    moveSel(target, p) {
       X.startMove(target, p);
       // birden çok katman seçiliyse hepsi birlikte taşınır
       const group = UI.selectedLayers().filter(q => q !== target && !q.locked);
       if (group.length) X.drag.others = group.map(q => ({ L: q, dx: q.x - target.x, dy: q.y - target.y }));
     },
     onMove(p, e) {
+      if (T.marq) { T.marq.b = p; App.requestRender(); return; }
       const pd = T.pend;
       if (pd && Math.hypot(p.sx - pd.p0.sx, p.sy - pd.p0.sy) > 3) {
         // Ctrl / Shift basılıyken sürükleme: tıklanan katman (seçimdeyse seçimle birlikte) taşınır
@@ -352,6 +360,21 @@
       if (X.move(p, e)) T.refreshFields();
     },
     onUp() {
+      const M = T.marq;
+      if (M) {
+        T.marq = null;
+        if (Math.hypot(M.b.sx - M.a.sx, M.b.sy - M.a.sy) < 4) { if (M.L) { App.setActive(null); T.refresh(); } App.requestRender(); return; }
+        const x0 = Math.min(M.a.x, M.b.x), x1 = Math.max(M.a.x, M.b.x), y0 = Math.min(M.a.y, M.b.y), y1 = Math.max(M.a.y, M.b.y);
+        // yalnızca kutunun içine tamamen sığan katmanlar seçilir (tuvali kaplayan bir şeye değmek onu seçmez)
+        const hits = App.doc.layers.filter(q => {
+          if (!q.visible || App.isBackdrop(q)) return false;
+          const b = App.contentAABB(q) || App.layerAABB(q);
+          return b.x0 >= x0 && b.x1 <= x1 && b.y0 >= y0 && b.y1 <= y1;
+        });
+        if (hits.length) UI.selectLayers(hits.map(q => q.id)); else App.setActive(null);
+        T.refresh(); App.requestRender();
+        return;
+      }
       const pd = T.pend;
       T.pend = null;
       if (pd) { UI.toggleLayerSel(pd.target); T.refresh(); return; }
@@ -384,7 +407,12 @@
     },
 
     drawOverlay(ctx) {
-      const L = App.activeLayer();
+      const L = App.activeLayer(), M = T.marq;
+      if (M) {
+        const x = Math.min(M.a.sx, M.b.sx), y = Math.min(M.a.sy, M.b.sy), w = Math.abs(M.b.sx - M.a.sx), hh = Math.abs(M.b.sy - M.a.sy);
+        ctx.save(); ctx.fillStyle = 'rgba(79,140,255,.12)'; ctx.fillRect(x, y, w, hh);
+        ctx.strokeStyle = '#4f8cff'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.strokeRect(x + 0.5, y + 0.5, w, hh); ctx.restore();
+      }
       // tuvali kaplayan arka planın çerçevesi tuvalin kenarıyla aynıdır; üzerinde gezerken çizilmez
       if (T.hoverL && T.hoverL !== L && !App.isBackdrop(T.hoverL)) App.drawLayerOutline(ctx, T.hoverL, 'rgba(79,140,255,.7)', [4, 3]);
       for (const q of UI.selectedLayers()) if (q !== L && q.visible) App.drawLayerOutline(ctx, q, q.locked ? '#ff9f43' : '#4f8cff');
@@ -407,6 +435,11 @@
 
       const name = h('input', { type: 'text', class: 'full', value: L.name, onchange: () => { L.name = name.value || L.name; App.commit('Rename'); } });
       body.appendChild(h('div', { class: 'field' }, h('label', { class: 'fld-label' }, 'Layer Name'), name));
+
+      // Az ayarı olan katmanların (şekil, çerçeve, kaplama) kendi ayarları da burada; araç değiştirmeden düzenlenir
+      const E = App.tools.element;
+      const own = E && (L.type === 'shape' ? E.shapeProps(L) : L.type === 'frame' ? E.frameProps(L) : L.type === 'overlay' ? E.overlayProps(L) : null);
+      if (own) body.appendChild(UI.section(own.title, own.kids));
 
       const num = (label, get, set) => {
         const n = UI.number({ label, value: Math.round(get()), onChange: v => { set(v); App.requestRender(); App.commit('Transform'); T.refreshFields(); } });

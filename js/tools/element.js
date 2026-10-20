@@ -4,7 +4,10 @@
   const { U, ui: UI, IMG } = App;
   const h = U.h;
   // tuvali kaplayan kilitli kaplama, alttaki şekillerin tıklanarak seçilmesini engellemesin
-  const pickable = q => !(q.locked && q.type === 'overlay');
+  // Kaplamalar tuvalin tamamını kapladığı için tıklama alttaki katmana geçer; seçiliyken içinden sürüklenince taşınır
+  const pickable = q => q.type !== 'overlay';
+  // Tuvalde tutamaçlarıyla taşınıp boyutlandırılabilen katmanlar (Düzenle aracıyla aynı; kilitliyse yalnızca seçilir)
+  const movable = L => !!L && ['shape', 'raster', 'text', 'overlay', 'frame'].includes(L.type);
 
   /* ------------------------------------------------ şekil yolları (w×h kutusunda) */
   // Köşe noktaları kutuya tam oturtulur (yıldızın alt uçları ve altıgenin yanları kutunun kenarına değsin;
@@ -471,7 +474,7 @@
     addFrame(style) {
       let L = T.cur('frame');
       if (!L) L = App.doc.layers.find(l => l.type === 'frame');
-      if (L) { L.frame.style = style; if (style === 'rounded' && (L.frame.radius || 0) < 10) L.frame.radius = 32; renderFrame(L); App.setActive(L.id); App.commit('Frame'); UI.rebuildPanel(); return; }
+      if (L) { L.frame.style = style; if (style === 'rounded' && (L.frame.radius || 0) < 10) L.frame.radius = 32; renderFrame(L); App.setActive(L.id, false); App.commit('Frame'); UI.rebuildPanel(); return; }
       L = App.newLayer(U.canvas(1, 1), { type: 'frame', name: 'Frame', frame: { style, ...JSON.parse(JSON.stringify(T.fdef)) }, locked: true });
       if (style === 'rounded' && (L.frame.radius || 0) < 10) L.frame.radius = 32;
       renderFrame(L);
@@ -500,7 +503,7 @@
         return;
       }
       const L = App.activeLayer();
-      const editable = L && (L.type === 'shape' || L.type === 'raster' || L.type === 'text');
+      const editable = movable(L);
       if (editable && App.xform.grab(L, p)) return;
       const hit = App.pickLayer(p.x, p.y, pickable);
       let target = hit;
@@ -508,7 +511,7 @@
       // boş yere tıklanınca seçim kalkar
       if (!target) { if (L) App.setActive(null); return; }
       if (target !== L) App.setActive(target.id);
-      if (!target.locked && target.type !== 'frame' && target.type !== 'overlay') App.xform.startMove(target, p);
+      if (!target.locked && movable(target)) App.xform.startMove(target, p);
     },
     onMove(p, e) {
       const M = T.make;
@@ -555,13 +558,13 @@
     onHover(p, e) {
       if (T.armed) { App.R.stage.style.cursor = 'crosshair'; App.hoverSnap(p, e); return; }
       const L = App.activeLayer();
-      const c = L && L.type !== 'frame' && L.type !== 'overlay' ? App.xform.cursor(L, p) : null;
+      const c = movable(L) ? App.xform.cursor(L, p) : null;
       App.R.stage.style.cursor = App.keys.space ? 'grab' : c || (App.pickLayer(p.x, p.y, pickable) ? 'pointer' : 'default');
     },
     drawOverlay(ctx) {
       const L = App.activeLayer();
       if (T.make) return;
-      if (L && (L.type === 'shape' || L.type === 'raster' || L.type === 'text')) App.xform.draw(ctx, L);
+      if (movable(L)) App.xform.draw(ctx, L);
     },
     refresh() { UI.rebuildPanel(); },
 

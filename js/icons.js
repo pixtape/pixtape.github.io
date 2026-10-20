@@ -105,6 +105,7 @@
     square: '<rect x="4" y="4" width="16" height="16" rx="1.5"/>',
     diamond: '<path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/>',
     pentagon: '<path d="M12 3l9 6.6-3.4 10.4H6.4L3 9.6z"/>',
+    curve: '<path d="M4 19C6 6 18 18 20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/>',
     hexagon: '<path d="M7.2 3.7h9.6l4.8 8.3-4.8 8.3H7.2L2.4 12z"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',

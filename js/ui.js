@@ -787,7 +787,13 @@
     for (const id of order) {
       const t = App.tools[id];
       if (t.hidden) continue;
-      const b = h('button', { class: 'tool-btn' + (App.tool && App.tool.id === id ? ' on' : ''), 'data-tool': id, draggable: 'true', 'aria-label': t.name, onclick: e => { if (e.detail) b.blur(); App.setTool(id); } });
+      const b = h('button', { class: 'tool-btn' + (App.tool && App.tool.id === id ? ' on' : ''), 'data-tool': id, draggable: 'true', 'aria-label': t.name, onclick: e => {
+        if (e.detail) b.blur();
+        // açık araca yeniden basmak araç panelini kapatır / açar (başka bir araç seçmek paneli yine açar)
+        if (App.tool && App.tool.id === id) { App.layout.toggleToolPanel(); return; }
+        App.layout.toggleToolPanel(true);
+        App.setTool(id);
+      } });
       b.innerHTML = App.icon(t.icon, 24);
       b.addEventListener('mouseenter', () => toolFly(b, t, K('tool:' + id)));
       b.addEventListener('mouseleave', hideFly);
@@ -1134,42 +1140,39 @@
     root.innerHTML = '';
     root.append(list, paper, props, foot);
 
-    let dragId = null, mark = null;
-    /* Sıralama: imlecin satırın üst ya da alt yarısında olmasına göre araya girer; çizgi gölgeyle çizilir
-       (yerleşim kaymaz, satırlar titremez). Listenin altındaki boşluğa bırakmak en alta koyar. */
-    const clearMark = () => { list.querySelectorAll('.ins-a,.ins-b').forEach(r => r.classList.remove('ins-a', 'ins-b')); mark = null; };
-    const dropSpot = e => {
-      const rows = [...list.querySelectorAll('.ly-row')];
-      if (!rows.length) return null;
-      let row = e.target.closest && e.target.closest('.ly-row'), above;
-      if (row) { const r = row.getBoundingClientRect(); above = e.clientY < r.top + r.height / 2; }
-      else if (e.clientY < rows[0].getBoundingClientRect().top) { row = rows[0]; above = true; }
-      else {
-        // satırların arasındaysa altındaki satırın üstüne, listenin altındaki boşluktaysa en alta
-        row = rows.find(r => e.clientY < r.getBoundingClientRect().bottom);
-        above = !!row;
-        if (!row) row = rows[rows.length - 1];
-      }
-      return { row, above };
-    };
+    let dragId = null, ph = null;
+    /* Sıralama: sürüklenen satır listeden çekilir, bırakılacağı yerde kesik çizgili boş bir kutu açılır ve alttaki
+       satırlar aşağı kayar; kullanıcı katmanın tam nereye gireceğini görür. Kutunun yeri imlecin, satırların ortasına
+       göre konumuyla belirlenir. Listenin altındaki boşluğa bırakmak en alta koyar. */
+    const clearMark = () => { if (ph) ph.remove(); ph = null; list.querySelectorAll('.drag-hide').forEach(r => r.classList.remove('drag-hide')); };
+    const liveRows = () => [...list.querySelectorAll('.ly-row:not(.drag-hide)')];
     list.addEventListener('dragover', e => {
-      if (!dragId) return;
+      if (!dragId || !ph) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      const s = dropSpot(e);
-      if (!s || (mark && mark.row === s.row && mark.above === s.above)) return;
-      clearMark();
-      if (s.row.dataset.id === dragId) return;
-      mark = s; s.row.classList.add(s.above ? 'ins-a' : 'ins-b');
+      // yerleşimdeki konum (kayma animasyonu sürerken de titremesin diye animasyonun kaydırması çıkarılır)
+      const topOf = r => { const q = r.getBoundingClientRect(), tf = getComputedStyle(r).transform; return q.top - (tf && tf !== 'none' ? new DOMMatrix(tf).m42 : 0); };
+      const next = liveRows().find(r => e.clientY < topOf(r) + r.offsetHeight / 2) || null;
+      if (next ? ph.nextElementSibling === next : ph === list.lastElementChild) return;
+      // satırlar yeni yerlerine anında atlamaz, kısa bir kaydırmayla gider
+      const rows = liveRows(), before = rows.map(r => r.getBoundingClientRect().top);
+      list.insertBefore(ph, next);
+      if (App.motion()) rows.forEach((r, k) => {
+        const d = before[k] - r.getBoundingClientRect().top;
+        if (d) r.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 140, easing: 'ease-out' });
+      });
     });
     list.addEventListener('dragenter', e => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } });
-    list.addEventListener('dragleave', e => { if (!list.contains(e.relatedTarget)) clearMark(); });
     list.addEventListener('drop', e => {
       e.preventDefault();
-      const s = dropSpot(e), id = dragId;
+      const id = dragId, d = App.doc;
+      if (!ph || !id || !d) { clearMark(); return; }
+      // kutunun altındaki satırın üstüne; kutu en alttaysa son satırın altına
+      let next = ph.nextElementSibling;
+      while (next && !next.classList.contains('ly-row')) next = next.nextElementSibling;
+      const rows = liveRows(), s = next ? { row: next, above: true } : rows.length ? { row: rows[rows.length - 1], above: false } : null;
       clearMark();
-      const d = App.doc;
-      if (!s || !id || !d) return;
+      if (!s) return;
       const i = d.layers.findIndex(l => l.id === id), j = d.layers.findIndex(l => l.id === s.row.dataset.id);
       if (i < 0 || j < 0 || i === j) return;
       // dizide üst = büyük indeks; i çıkarılınca j'den sonrakiler bir kayar
@@ -1190,9 +1193,10 @@
         const sub = h('div', { class: 'ly-sub' }, L.type === 'group' ? App.t('Group, {0} layers', L.children.length)
           : { raster: 'Image', text: 'Text', shape: 'Shape', frame: 'Frame', overlay: 'Overlay' }[L.type] || '');
         const eye = h('button', { class: 'ly-ic' + (L.visible ? '' : ' off'), title: 'Show/Hide', html: App.icon(L.visible ? 'eye' : 'eyeOff', 16) });
-        eye.onclick = e => { e.stopPropagation(); L.visible = !L.visible; App.commit(L.visible ? 'Show Layer' : 'Hide Layer'); };
+        eye.onclick = e => { e.stopPropagation(); L.visible = !L.visible; App.commit(L.visible ? 'Show Layer' : 'Hide Layer'); refresh(); App.requestRender(); };
         const lock = h('button', { class: 'ly-ic' + (L.locked ? ' on' : ' dimmed'), title: 'Lock Position', html: App.icon(L.locked ? 'lock' : 'unlock', 15) });
-        lock.onclick = e => { e.stopPropagation(); L.locked = !L.locked; App.commit(L.locked ? 'Lock' : 'Unlock'); };
+        // simge hemen güncellensin (kayıt listeyi kendiliğinden yenilemez)
+        lock.onclick = e => { e.stopPropagation(); L.locked = !L.locked; App.commit(L.locked ? 'Lock' : 'Unlock'); refresh(); App.requestRender(); };
         const row = h('div', {
           class: 'ly-row' + (L.id === d.active ? ' on' : '') + (multi.has(L.id) && L.id !== d.active ? ' sel' : '') + (L.visible ? '' : ' hidden'), draggable: 'true',
           onclick: e => pick(L, e),
@@ -1206,8 +1210,13 @@
         }, thumb(L), h('div', { class: 'ly-info' }, name, sub), lock, eye);
         row.dataset.id = L.id;
         // veri yazılmazsa tarayıcı sürüklemeyi "bırakılamaz" sayar ve imleç yasak işaretine döner
-        row.addEventListener('dragstart', e => { dragId = L.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', L.name || 'layer'); row.classList.add('drag'); });
-        row.addEventListener('dragend', () => { dragId = null; row.classList.remove('drag'); clearMark(); });
+        row.addEventListener('dragstart', e => {
+          dragId = L.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', L.name || 'layer');
+          // satır, sürükleme resmi alındıktan sonra gizlenir; yerinde aynı boyda kesik çizgili kutu açılır
+          const hgt = row.offsetHeight;
+          setTimeout(() => { if (dragId !== L.id) return; ph = h('div', { class: 'ly-ph' }); ph.style.height = hgt + 'px'; row.after(ph); row.classList.add('drag-hide'); }, 0);
+        });
+        row.addEventListener('dragend', () => { dragId = null; clearMark(); });
         list.appendChild(row);
       }
       syncPaper();

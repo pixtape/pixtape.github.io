@@ -29,7 +29,7 @@
     rotSnap: false,      // her zaman Shift basılıymış gibi adım adım döndür
     guideColor: '#ff3bd0',
     snapDist: 7,         // yapışma mesafesi (ekran px)
-    histMax: 40,         // geçmişte tutulacak adım sayısı
+    histMax: 100,        // geçmişte tutulacak adım sayısı
     autosave: true,      // projeleri otomatik kaydet
     keepProjects: 0,     // saklanacak son proje sayısı (0: sınırsız, hiçbir proje kendiliğinden silinmez; sabitlenenler hariç)
     wheel: 'zoom',       // fare tekerleği: 'zoom' | 'pan'
@@ -52,6 +52,8 @@
   };
   App.prefs = { ...App.PREF_DEFAULTS };
   try { Object.assign(App.prefs, JSON.parse(localStorage.getItem('pixtape-prefs')) || {}); } catch (e) { /* */ }
+  // eski varsayılan (40) adım sayısı yeni varsayılana (100) çıkarılır; bir kez yapılır
+  if (!App.prefs.hist100) { if (App.prefs.histMax === 40) App.prefs.histMax = 100; App.prefs.hist100 = true; }
   App.setPref = (k, v) => {
     App.prefs[k] = v;
     try { localStorage.setItem('pixtape-prefs', JSON.stringify(App.prefs)); } catch (e) { /* */ }
@@ -283,10 +285,13 @@
   };
   App.layerById = id => App.doc && App.doc.layers.find(l => l.id === id);
 
-  App.setActive = id => {
+  // record: seçim değişikliği geri alma adımı olarak saklanır (Ctrl+Z önce seçimi geri getirir)
+  App.setActive = (id, record = true) => {
     if (!App.doc) return;
+    if (record && (id || null) !== (App.doc.active || null)) App.history.selStep(App.doc.active || null, id || null);
     App.doc.active = id;
     App.emit('active');
+    if (record) App.emit('picked', id); // kullanıcı seçti (geri alma ya da program değil)
     App.requestRender();
   };
 
@@ -471,6 +476,18 @@
     hulls.set(c, e);
     return e;
   };
+  // Bir değişiklikten sonra katmanların görünen sınırları boşta kalınan anda önceden hesaplanır; yoksa ilk taşımada
+  // (hizalama için) büyük bir arka plan resmi baştan taranır ve sürükleme ilk anda takılır
+  let hullWarm = 0;
+  App.on('history', () => {
+    const idle = window.requestIdleCallback || (f => setTimeout(f, 200));
+    const run = ++hullWarm;
+    idle(() => {
+      const d = App.doc;
+      if (!d || run !== hullWarm || App.pointerDown) return;
+      for (const L of d.layers) if (L.type !== 'text' && L.visible && L.canvas && L.canvas.width) hullOf(L.canvas);
+    }, { timeout: 1500 });
+  });
   App.contentAABB = L => {
     if (L.type === 'text' || !L.canvas.width || !L.canvas.height) return App.layerAABB(L);
     const e = hullOf(L.canvas);
@@ -768,7 +785,7 @@
   /* ---------------------------------------------------------------- geçmiş */
   App.history = {
     stack: [], index: -1,
-    get max() { return U.clamp(App.prefs.histMax || 40, 5, 500); },
+    get max() { return U.clamp(App.prefs.histMax || 100, 5, 500); },
     snapshot() {
       const d = App.doc;
       return { w: d.w, h: d.h, bg: d.bg || null, active: d.active, layers: d.layers.map(App.cloneLayer) };
@@ -778,9 +795,39 @@
       this.index = 0;
       App.emit('history');
     },
+    // Seçim adımları, ardından gelen değişikliğe kadar geçerli olan geçmiş adımında tutulur (geçmiş panelinde görünmez)
+    selStep(from, to) {
+      const e = this.stack[this.index];
+      if (!e) return;
+      (e.sels = e.sels || []).push({ from, to });
+      if (e.sels.length > 100) e.sels.shift();
+      e.selRedo = null;
+      if (App.ui && App.ui.syncUndo) App.ui.syncUndo();
+    },
+    // Seçim adımını geri al / yinele; yapılacak adım yoksa false
+    selHist(redo) {
+      const e = this.stack[this.index], d = App.doc;
+      if (!e || !d) return false;
+      const from = redo ? e.selRedo : e.sels, to = redo ? (e.sels = e.sels || []) : (e.selRedo = e.selRedo || []);
+      const ok = id => !id || d.layers.some(l => l.id === id);
+      while (from && from.length) {
+        const s = from.pop(), id = redo ? s.to : s.from;
+        to.push(s);
+        // silinmiş nesneye ya da zaten seçili olana dönen adım atlanır
+        if (!ok(id) || (id || null) === (d.active || null)) continue;
+        d.active = id;
+        App.emit('active');
+        if (App.tool && App.tool.refresh) App.tool.refresh();
+        App.requestRender();
+        if (App.ui && App.ui.syncUndo) App.ui.syncUndo();
+        return true;
+      }
+      return false;
+    },
     push(label) {
       if (!App.doc) return;
       this.pendingRedo = null;
+      if (this.stack[this.index]) this.stack[this.index].selRedo = null;
       this.stack.length = this.index + 1;
       this.stack.push({ label, state: this.snapshot(), time: Date.now() });
       // ilk durumu karşılaştırma için koru, aradakileri sil
@@ -804,6 +851,9 @@
       this.pendingRedo = null;
       this.index = i;
       this.restore(this.stack[i].state);
+      // bu adımdan sonra yapılan seçim geri gelir (seçim adımları buradan sonra tek tek geri alınır)
+      const ss = this.stack[i].sels, last = ss && ss.length ? ss[ss.length - 1].to : undefined;
+      if (last !== undefined && (!last || App.doc.layers.some(l => l.id === last))) App.doc.active = last;
       App.emit('history');
       App.emit('changed');
       if (App.tool && App.tool.refresh) App.tool.refresh();
@@ -819,6 +869,7 @@
         App.emit('history');
         return;
       }
+      if (this.selHist(false)) return;
       this.go(this.index - 1);
     },
     redo() {
@@ -831,12 +882,13 @@
         App.emit('history');
         return;
       }
+      if (this.selHist(true)) return;
       this.go(this.index + 1);
     },
-    canUndo() { return this.index > 0 || toolDirty() || !!(App.tool && App.tool.canLocalUndo && App.tool.canLocalUndo()); },
+    canUndo() { const e = this.stack[this.index]; return this.index > 0 || toolDirty() || !!(e && e.sels && e.sels.length) || !!(App.tool && App.tool.canLocalUndo && App.tool.canLocalUndo()); },
     canRedo() {
-      const t = App.tool, pr = this.pendingRedo;
-      return this.index < this.stack.length - 1 || !!(t && t.canLocalRedo && t.canLocalRedo()) || !!(pr && pr.tool === t && pr.index === this.index);
+      const t = App.tool, pr = this.pendingRedo, e = this.stack[this.index];
+      return this.index < this.stack.length - 1 || !!(e && e.selRedo && e.selRedo.length) || !!(t && t.canLocalRedo && t.canLocalRedo()) || !!(pr && pr.tool === t && pr.index === this.index);
     },
   };
   const toolDirty = () => !!(App.tool && App.tool.isDirty && App.tool.isDirty());
@@ -1083,6 +1135,10 @@
     }
     const bc = App.brushCursor;
     if (bc && !App.compare) {
+      // boyut her çizimde güncel fırça boyutu ve yakınlaştırmadan hesaplanır: fare kıpırdamadan yakınlaştırılınca ya da
+      // boyut değişince de yuvarlak gerçek boyutunu gösterir
+      const bt = App.tool;
+      if (bt && bt.brushSize && bt.brushSize() > 0) bc.r = bt.brushSize() / 2 * App.view.zoom;
       ctx.save();
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(0,0,0,.7)';
@@ -1326,10 +1382,29 @@
       const r = R.canvas.getBoundingClientRect();
       return { sx: e.clientX - r.left, sy: e.clientY - r.top };
     };
+    /* Dokunmatik ekran: iki parmak sıkıştırarak yakınlaştırır ve sürükleyerek kaydırır. İkinci parmak gelince tek
+       parmakla başlamış iş bitirilir; parmakların hepsi kalkana kadar yeni çizim başlamaz. */
+    const touches = new Map();
+    let pinch = null, pinchHold = false;
+    const pinchState = () => {
+      const [a, b] = [...touches.values()];
+      return { c: { x: (a.sx + b.sx) / 2, y: (a.sy + b.sy) / 2 }, d: Math.max(1, Math.hypot(a.sx - b.sx, a.sy - b.sy)) };
+    };
     st.addEventListener('pointerdown', e => {
       if (!App.doc) return;
       st.setPointerCapture(e.pointerId);
       const { sx, sy } = pos(e);
+      if (e.pointerType === 'touch') {
+        touches.set(e.pointerId, { sx, sy });
+        if (touches.size === 2) {
+          if (dragging) up(e);
+          const s0 = pinchState();
+          pinch = { ...s0, z0: App.view.zoom, vx: App.view.x, vy: App.view.y };
+          pinchHold = true;
+          return;
+        }
+        if (pinchHold || touches.size > 2) return;
+      }
       if (e.button === 1 || (e.button === 0 && App.keys.space)) {
         pan = { sx, sy, vx: App.view.x, vy: App.view.y };
         st.style.cursor = 'grabbing';
@@ -1349,6 +1424,16 @@
     st.addEventListener('pointermove', e => {
       if (!App.doc) return;
       const { sx, sy } = pos(e);
+      if (touches.has(e.pointerId)) touches.set(e.pointerId, { sx, sy });
+      if (pinch && touches.size >= 2) {
+        const s1 = pinchState(), z = U.clamp(pinch.z0 * s1.d / pinch.d, 0.02, 32);
+        // iki parmağın ortasındaki doküman noktası parmakların ortasında kalır
+        const px = (pinch.c.x - pinch.vx) / pinch.z0, py = (pinch.c.y - pinch.vy) / pinch.z0;
+        App.view.zoom = z; App.view.x = s1.c.x - px * z; App.view.y = s1.c.y - py * z;
+        App.emit('view'); App.requestRender();
+        return;
+      }
+      if (pinchHold && e.pointerType === 'touch') return;
       if (pan) {
         App.view.x = pan.vx + sx - pan.sx;
         App.view.y = pan.vy + sy - pan.sy;
@@ -1374,6 +1459,12 @@
       App.emit('pointer', p);
     });
     const up = e => {
+      if (touches.has(e.pointerId) && (e.type === 'pointerup' || e.type === 'pointercancel')) {
+        touches.delete(e.pointerId);
+        if (touches.size < 2) pinch = null;
+        if (!touches.size) pinchHold = false;
+        if (pinchHold) return;
+      }
       if (pan) { pan = null; App.updateCursor(); return; }
       if (!dragging) return;
       dragging = App.pointerDown = false;
@@ -1432,9 +1523,11 @@
     if (t.onStepSize && t.onStepSize(dir) !== false) return;
     if (t.brushSize && t.brushSize() > 0) {
       const f = wheel ? 1.08 : 1.15;
-      const nv = Math.round(U.clamp(dir > 0 ? t.size * f + 1 : t.size / f - 1, 1, App.brushMax(800)));
+      // Alt + tekerlek de kaydırıcının sınırında durur (kaydırıcıyla aynı en büyük boyut)
+      const sl = t.sizeSl || t._size, rng = sl && sl.el && sl.el.querySelector('input[type=range]');
+      const max = rng ? +rng.max : App.brushMax(300);
+      const nv = Math.round(U.clamp(dir > 0 ? t.size * f + 1 : t.size / f - 1, 1, max));
       t.size = nv;
-      const sl = t.sizeSl || t._size;
       if (sl) sl.set(nv);
       if (App.brushCursor) App.brushCursor.r = t.brushSize() / 2 * App.view.zoom;
       App.requestRender();

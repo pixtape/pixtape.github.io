@@ -4,7 +4,18 @@
   const { U, ui: UI } = App;
   const h = U.h;
   // tıklama metinlere ulaşsın: üstteki kilitli katmanlar (ör. kaplama) atlanır
-  const textHit = q => !q.locked || q.type === 'text';
+  // Noktanın altındaki en üstteki metin. Harfin üstüne denk gelmek gerekmez: yazının sınır kutusu sayılır
+  // (kenar boşlukları, kontur ve gölge payı hariç), kutunun dışına tıklamak yeni metin ekler.
+  const textAt = p => {
+    const ls = App.doc ? App.doc.layers : [];
+    for (let i = ls.length - 1; i >= 0; i--) {
+      const q = ls[i];
+      if (q.type !== 'text' || !q.visible || App.isBackdrop(q)) continue;
+      const l = App.docToLayer(q, p.x, p.y), pad = q._pad || 0;
+      if (l.x >= pad && l.y >= pad && l.x <= q.canvas.width - pad && l.y <= q.canvas.height - pad) return q;
+    }
+    return null;
+  };
 
   /* ------------------------------------------------ yazı tipleri */
   // bilinen yaygın yazı tiplerinden yalnızca bu cihazda yüklü olanlar listelenir
@@ -120,6 +131,79 @@
 
   const fontStr = t => `${t.italic ? 'italic ' : ''}${t.bold ? '700' : '400'} ${t.size}px "${t.font}", "Segoe UI", sans-serif`;
 
+  /* ------------------------------------------------ metin şablonları
+     Her şablon bir ya da birkaç metin katmanıdır. Ölçüler 100 = varsayılan yazı boyu olacak şekilde verilir; eklenirken
+     tuvalin boyuna göre büyütülür. dx / dy: katmanın şablonun ortasına uzaklığı. Metinler çevrilmez (her dilde aynı). */
+  const SH = (blur = 12, y = 4, o = 0.45, color = '#000000') => ({ color, blur, x: 0, y, opacity: o });
+  const TEMPLATES = [
+    [{ v: 'Big sale', upper: 1, font: 'Anton', size: 150, color: '#ffffff', bg: { color: '#e63946', padX: 34, padY: 8, radius: 8 }, dy: -40 },
+      { v: 'Up to 50% off', upper: 1, font: 'Montserrat', bold: 1, size: 44, spacing: 8, color: '#ffffff', shadow: SH(10, 3), dy: 78 }],
+    [{ v: 'Happy Birthday', font: 'Great Vibes', size: 170, grad: ['#ff9ad5', '#ffd36e', 90], shadow: SH(12, 4, 0.4), dy: -25 },
+      { v: 'Have a wonderful day', upper: 1, font: 'Montserrat', bold: 1, size: 40, spacing: 6, color: '#ffffff', shadow: SH(8, 2), dy: 75 }],
+    [{ v: 'New post', upper: 1, font: 'Poppins', bold: 1, size: 70, spacing: 4, color: '#ffffff', bg: { color: '#6c5cff', padX: 48, padY: 20, radius: 999 } }],
+    [{ v: 'Grand', upper: 1, font: 'Bebas Neue', size: 160, spacing: 12, grad: ['#f9d976', '#c7902e', 180], shadow: SH(10, 4, 0.4), dy: -58 },
+      { v: 'Opening', upper: 1, font: 'Bebas Neue', size: 84, spacing: 24, color: '#ffffff', shadow: SH(8, 3), dy: 50 },
+      { v: 'this Saturday', font: 'Pacifico', size: 46, color: '#f9d976', shadow: SH(8, 3), dy: 118 }],
+    [{ v: 'Thank You', font: 'Great Vibes', size: 160, color: '#ffffff', shadow: SH(14, 4, 0.5), dy: -22 },
+      { v: 'For watching', upper: 1, font: 'Montserrat', bold: 1, size: 40, spacing: 12, color: '#ffffff', shadow: SH(8, 2), dy: 72 }],
+    [{ v: 'Breaking', upper: 1, font: 'Anton', size: 92, spacing: 2, color: '#ffffff', bg: { color: '#d90429', padX: 26, padY: 4, radius: 0 }, dy: -42 },
+      { v: 'News', upper: 1, font: 'Anton', size: 92, spacing: 2, color: '#111111', bg: { color: '#ffffff', padX: 26, padY: 4, radius: 0 }, dy: 62 }],
+    [{ v: 'Coming Soon', font: 'Righteous', size: 110, color: '#ffffff', shadow: SH(40, 0, 1, '#ff2bd6') }],
+    [{ v: "don't forget to", font: 'Kaushan Script', size: 52, color: '#ffffff', shadow: SH(8, 3), dy: -72 },
+      { v: 'Subscribe', upper: 1, font: 'Luckiest Guy', size: 120, color: '#ffde00', stroke: { color: '#e4007c', w: 9 }, shadow: { color: '#000000', blur: 0, x: 6, y: 6, opacity: 1 }, dy: 18 }],
+    [{ v: 'Summer Vibes', font: 'Pacifico', size: 120, grad: ['#ffb000', '#ff4d6d', 180], stroke: { color: '#ffffff', w: 6 }, curve: 20 }],
+    [{ v: '“Be the energy you\\nwant to attract.”', font: 'Playfair Display', italic: 1, size: 72, lineH: 1.2, color: '#ffffff', shadow: SH(10, 3), dy: -22 },
+      { v: '— Author name', upper: 1, font: 'Montserrat', size: 34, spacing: 6, color: '#ffffff', shadow: SH(6, 2), dy: 100 }],
+    [{ v: 'Limited offer', upper: 1, font: 'Black Ops One', size: 92, color: '#ffffff', stroke: { color: '#111111', w: 6 }, dy: -22 },
+      { v: 'only today', font: 'Satisfy', size: 60, color: '#ffd23f', shadow: SH(8, 3), dy: 62 }],
+    [{ v: 'Game over', upper: 1, font: 'Press Start 2P', size: 64, color: '#39ff14', shadow: { color: '#006b2e', blur: 0, x: 6, y: 6, opacity: 1 }, dy: -24 },
+      { v: 'Press start', upper: 1, font: 'Press Start 2P', size: 24, color: '#ffffff', dy: 56 }],
+    [{ v: 'Merry Christmas', font: 'Mountains of Christmas', bold: 1, size: 112, color: '#e63946', stroke: { color: '#ffffff', w: 6 }, dy: -22 },
+      { v: 'and a happy new year', upper: 1, font: 'Montserrat', bold: 1, size: 34, spacing: 7, color: '#ffffff', shadow: SH(8, 2), dy: 64 }],
+    [{ v: "Don't stop", upper: 1, font: 'Anton', size: 130, color: '#ffffff', shadow: SH(12, 4), dy: -40 },
+      { v: "until you're proud", upper: 1, font: 'Montserrat', bold: 1, size: 38, spacing: 4, color: '#111111', bg: { color: '#ffd23f', padX: 20, padY: 8, radius: 4 }, dy: 62 }],
+    [{ v: 'Free shipping', upper: 1, font: 'Poppins', bold: 1, size: 64, color: '#ffffff', bg: { color: '#2a9d8f', padX: 38, padY: 16, radius: 14 }, dy: -20 },
+      { v: 'on all orders', font: 'Poppins', size: 34, color: '#ffffff', shadow: SH(8, 2), dy: 60 }],
+    [{ v: 'Sunday', upper: 1, font: 'Bebas Neue', size: 120, spacing: 4, color: '#ffd23f', shadow: { color: '#e63946', blur: 0, x: 8, y: 8, opacity: 1 }, dy: -48 },
+      { v: 'Funday', upper: 1, font: 'Bebas Neue', size: 120, spacing: 4, color: '#ffd23f', shadow: { color: '#e63946', blur: 0, x: 8, y: 8, opacity: 1 }, dy: 52 }],
+  ];
+  const tplFontStr = it => `${it.italic ? 'italic ' : ''}${it.bold ? 700 : 400} 32px "${pickFont(it.font)}"`;
+  let tplFontsP = null;
+  const templateFonts = () => tplFontsP || (tplFontsP = loadWebFonts().then(() => Promise.all(TEMPLATES.flat().map(it => document.fonts.load(tplFontStr(it)).catch(() => {}))))
+    .then(() => { tplFontsP.done = true; }));
+  // Şablonun katmanları (k: ölçek; 1 = 100 birim yazı boyu 100 px)
+  const templateLayers = (tp, k) => tp.map(it => {
+    const t = DEF();
+    Object.assign(t, {
+      value: it.v.replace(/\\n/g, '\n'), font: pickFont(it.font), size: it.size * k, color: it.color || '#ffffff', bold: !!it.bold, italic: !!it.italic,
+      upper: !!it.upper, spacing: (it.spacing || 0) * k, lineH: it.lineH || 1.1, curve: it.curve || 0, align: 'center', lang: 'en',
+    });
+    t.stroke = it.stroke ? { on: true, color: it.stroke.color, w: it.stroke.w * k } : { on: false, color: '#000000', w: Math.max(2, t.size * 0.06) };
+    t.bg = it.bg ? { on: true, mode: 'all', opacity: 1, color: it.bg.color, radius: (it.bg.radius || 0) * k, pad: (it.bg.padX || 20) * k, padX: (it.bg.padX || 20) * k, padY: (it.bg.padY || 10) * k }
+      : { on: false, color: '#000000', pad: t.size * 0.25, padX: t.size * 0.25, padY: t.size * 0.15, radius: 16 * k, mode: 'all', opacity: 0.8 };
+    if (it.grad) t.grad = { on: true, ...U.gradDef(it.grad[0], it.grad[1], it.grad[2] == null ? 180 : it.grad[2]) };
+    const L = App.newLayer(U.canvas(1, 1), { type: 'text', name: t.value.split('\n')[0].slice(0, 30), text: t });
+    if (it.shadow) L.shadow = { on: true, ...it.shadow, blur: it.shadow.blur * k, x: it.shadow.x * k, y: it.shadow.y * k };
+    render(L);
+    L._tdx = (it.dx || 0) * k; L._tdy = (it.dy || 0) * k;
+    return L;
+  });
+  // Şablonun küçük önizlemesi
+  const templateThumb = (tp, cv) => {
+    const ls = templateLayers(tp, 0.5), x = cv.getContext('2d');
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const L of ls) {
+      const p = (L._pad || 0) * 0.6;
+      x0 = Math.min(x0, L._tdx - L.canvas.width / 2 + p); x1 = Math.max(x1, L._tdx + L.canvas.width / 2 - p);
+      y0 = Math.min(y0, L._tdy - L.canvas.height / 2 + p); y1 = Math.max(y1, L._tdy + L.canvas.height / 2 - p);
+    }
+    const s = Math.min((cv.width - 16) / (x1 - x0), (cv.height - 16) / (y1 - y0), 1);
+    x.clearRect(0, 0, cv.width, cv.height);
+    x.save(); x.translate(cv.width / 2, cv.height / 2); x.scale(s, s); x.translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+    for (const L of ls) x.drawImage(L.canvas, L._tdx - L.canvas.width / 2, L._tdy - L.canvas.height / 2);
+    x.restore();
+  };
+
   /* ------------------------------------------------ karışık stil (metnin bir bölümüne ayrı stil)
      t.runs: [{ s, e, b, i, u, f, c }]: t.value içindeki [s, e) aralığına kalın (b), italik (i), altı çizili (u),
      yazı tipi (f) ve renk (c). Yalnızca verilen özellikler metnin genel stilini ezer. Aralıklar sıralı ve çakışmasızdır. */
@@ -136,7 +220,8 @@
   const styleKey = st => [st.bold, st.italic, st.underline, st.font, st.color].join('|');
   // Satırları stil parçalarına böler: [{ segs: [{ text, st, font }], start }]. Büyük harf ayarı karakter karakter uygulanır.
   const textRows = t => {
-    const loc = App.i18n.locale(), rows = [];
+    // t.lang: metnin kendi dili (ör. şablonlar İngilizce: büyük harfte i → I); yoksa arayüz dili
+    const loc = t.lang || App.i18n.locale(), rows = [];
     let off = 0;
     for (const line of t.value.split('\n')) {
       const segs = [];
@@ -590,13 +675,17 @@
     const [n1, o1] = nodeAt(el, a), [n2, o2] = nodeAt(el, b);
     try { r.setStart(n1, o1); r.setEnd(n2, o2); sel.removeAllRanges(); sel.addRange(r); } catch (e) { /* */ }
   };
-  // Eski ve yeni metin arasındaki tek değişiklik: a konumunda del karakter silindi, ins karakter eklendi
-  const diffText = (o, n) => {
+  // Eski ve yeni metin arasındaki tek değişiklik: a konumunda del karakter silindi, ins karakter eklendi.
+  // cur: değişiklikten sonraki imleç. Yanındaki harfle aynı bir harf eklenince ("es" arasına "s") değişiklik
+  // imlecin olduğu yerde sayılır; yoksa kelimenin sonuna eklenmiş gibi görünür ve imleç oraya atlar.
+  const diffText = (o, n, cur) => {
     let a = 0;
     const m = Math.min(o.length, n.length);
-    while (a < m && o[a] === n[a]) a++;
+    const ma = cur == null ? m : Math.max(0, Math.min(m, cur - Math.max(0, n.length - o.length)));
+    while (a < ma && o[a] === n[a]) a++;
     let k = 0;
-    while (k < m - a && o[o.length - 1 - k] === n[n.length - 1 - k]) k++;
+    const mk = cur == null ? m - a : Math.min(m - a, n.length - Math.max(cur, a));
+    while (k < mk && o[o.length - 1 - k] === n[n.length - 1 - k]) k++;
     return { a, del: o.length - a - k, ins: n.length - a - k };
   };
   // Alanı stil parçalarıyla yeniden kurar. E.pend: panelde ayar yapılırken seçili kalan bölüm (işaretlenir).
@@ -621,6 +710,167 @@
     // son satır boşsa da görünsün diye işaret (metne sayılmaz)
     const br = document.createElement('br'); br.dataset.end = '1';
     el.appendChild(br);
+  };
+  // Alanın harfleri tuvalde çizilenlerle aynı genişlikte olsun: tarayıcı bir yazı tipini tuvalden farklı ölçerse
+  // (yedek yazı tipi, ekran ölçeği) her parçanın harf aralığı farkı kapatacak kadar düzeltilir, imleç kaymaz.
+  let fitBox = null;
+  const fitEditor = (el, t, px, sp) => {
+    if (!fitBox) {
+      fitBox = document.createElement('span');
+      fitBox.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden;white-space:pre;letter-spacing:0;pointer-events:none';
+      document.body.appendChild(fitBox);
+    }
+    const loc = t.lang || App.i18n.locale();
+    // ölçüm harf aralığı olmadan yapılır (aralık sp olarak ayrıca eklenir; çizim ölçücüye kendi aralığını yazar)
+    setSpacing(measurer, 0);
+    for (const s of el.children) {
+      if (s.nodeName !== 'SPAN') continue;
+      const key = `${s.textContent}|${s.style.fontFamily}|${s.style.fontWeight}|${s.style.fontStyle}|${px}|${sp}|${t.upper}`;
+      if (s._fit === key) continue;
+      s._fit = key;
+      const parts = s.textContent.split('\n').map(q => (t.upper ? q.toLocaleUpperCase(loc) : q)).filter(Boolean);
+      const n = parts.reduce((a, q) => a + [...q].length, 0);
+      if (!n) { s.style.letterSpacing = ''; continue; }
+      measurer.font = `${s.style.fontStyle} ${s.style.fontWeight} ${px}px ${s.style.fontFamily}`;
+      fitBox.style.font = measurer.font;
+      let cw = 0, dw = 0;
+      for (const q of parts) {
+        cw += measurer.measureText(q).width;
+        fitBox.textContent = q; dw += fitBox.getBoundingClientRect().width;
+      }
+      const d = (cw - dw) / n;
+      s.style.letterSpacing = Math.abs(d) < 0.01 ? '' : (sp + d) + 'px';
+    }
+  };
+
+  /* İmleç ve seçim, tarayıcının yazma alanına göre değil, metni çizen ölçümle hesaplanır ve ayrıca çizilir.
+     Böylece tarayıcı yazı tipini farklı ölçse de (ekran ölçeği, yazı tipi sürümü) imleç harflerin tam üstünde durur.
+     caretMap: satır başına { s, e, y, xs }; xs[k], satırdaki s + k konumunun (UTF-16) katman tuvalindeki x'i. */
+  // Bir yazı tipi yüklendikçe artar: yüklenmeden (yedek yazı tipiyle) ölçülen harita yeniden hesaplansın
+  let fontGen = 0;
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { fontGen++; });
+  const caretMap = L => {
+    const t = L.text, pad = L._pad || 0, W = L.canvas.width;
+    const key = [fontGen, t.value, JSON.stringify(t.runs || null), t.font, t.size, t.bold, t.italic, t.spacing, t.upper, t.align, t.lineH, W, pad, t.lang || App.i18n.locale()].join('|');
+    if (L._cmap && L._cmap.key === key) return L._cmap;
+    const m = measurer, lh = t.size * t.lineH;
+    setSpacing(m, t.spacing);
+    const rows = textRows(t).map((r, i) => {
+      const line = t.value.slice(r.start, t.value.indexOf('\n', r.start) < 0 ? t.value.length : t.value.indexOf('\n', r.start));
+      const cps = [...line], xs = [0];
+      let base = 0, ci = 0;
+      for (const sg of r.segs) {
+        m.font = sg.font;
+        let acc = '', end = 0;
+        for (const ch of sg.chars) {
+          acc += ch; end = m.measureText(acc).width;
+          const u = (cps[ci++] || ch).length;
+          for (let k = 1; k < u; k++) xs.push(xs[xs.length - 1]); // vekil çiftin ortası: harfin başı
+          xs.push(base + end);
+        }
+        base += end;
+      }
+      let w = base;
+      if (!r.segs.length) { m.font = fontStr(t); w = m.measureText(' ').width; }
+      const x0 = t.align === 'right' ? W - pad - w : t.align === 'center' ? (W - w) / 2 : pad;
+      return { s: r.start, e: r.start + line.length, y: pad + lh * (i + 0.5), xs: xs.map(x => x + x0) };
+    });
+    return (L._cmap = { key, rows, lh });
+  };
+  const rowOf = (map, i) => map.rows.find(r => i >= r.s && i <= r.e) || map.rows[map.rows.length - 1];
+  // Ekrandaki bir noktaya en yakın harf sınırı
+  const hitIndex = (L, cx, cy) => {
+    const st = App.R.stage.getBoundingClientRect();
+    const p = App.screenToDoc(cx - st.left, cy - st.top), q = App.docToLayer(L, p.x, p.y);
+    const map = caretMap(L), n = map.rows.length;
+    const r = map.rows[Math.max(0, Math.min(n - 1, Math.floor((q.y - (L._pad || 0)) / map.lh)))];
+    let best = 0;
+    r.xs.forEach((x, k) => { if (Math.abs(x - q.x) < Math.abs(r.xs[best] - q.x)) best = k; });
+    return r.s + best;
+  };
+  // Alan içindeki bir DOM konumunun metin konumu
+  const idxOf = (el, node, off) => {
+    if (!node || !el.contains(node)) return null;
+    const pre = document.createRange();
+    pre.selectNodeContents(el); pre.setEnd(node, off);
+    return pre.toString().length;
+  };
+  // Yönlü seçim: a sabit uç, b imlecin olduğu uç
+  const setSelDir = (el, a, b) => {
+    const [n1, o1] = nodeAt(el, a), [n2, o2] = nodeAt(el, b);
+    try { getSelection().setBaseAndExtent(n1, o1, n2, o2); } catch (e) { /* */ }
+  };
+  // Kelimenin sınırları (harf / rakam dizisi; boşlukta boşluk dizisi)
+  const wordAt = (v, i) => {
+    const isW = c => /[\p{L}\p{N}_'’]/u.test(c), ref = v[i] && v[i] !== '\n' ? v[i] : v[i - 1] || '';
+    if (!ref || ref === '\n') return [i, i];
+    const same = c => c && c !== '\n' && (isW(ref) ? isW(c) : !isW(c) && /\s/.test(c) === /\s/.test(ref));
+    let a = v[i] && v[i] !== '\n' ? i : i - 1, b = a + 1;
+    while (a > 0 && same(v[a - 1])) a--;
+    while (b < v.length && same(v[b])) b++;
+    return [a, b];
+  };
+  // İmlecin altında (çevresindeki dar bir şeritte) ekranda görünen parlaklığın ortancası: açıksa siyah, koyuysa beyaz
+  const caretInk = el => {
+    try {
+      const cv = App.R.canvas, cr = cv.getBoundingClientRect(), r = el.getBoundingClientRect(), k = cv.width / cr.width;
+      const x0 = Math.max(0, Math.floor((r.left - cr.left - 4) * k)), y0 = Math.max(0, Math.floor((r.top - cr.top) * k));
+      const w = Math.min(cv.width - x0, Math.ceil((r.width + 8) * k)), hh = Math.min(cv.height - y0, Math.ceil(r.height * k));
+      if (w < 1 || hh < 1) return null;
+      const px = cv.getContext('2d').getImageData(x0, y0, w, hh).data, lum = [];
+      for (let i = 0; i < px.length; i += 4) lum.push(0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]);
+      lum.sort((a, b) => a - b);
+      return lum[lum.length >> 1] > 150 ? '#000000' : '#ffffff';
+    } catch (e) { return null; }
+  };
+  // İmleci ve seçimi çizer; yalnızca bir şey değişince yeniden kurulur (imleç yanıp sönmeye baştan başlar)
+  const drawDeco = E => {
+    const d = E.deco, ta = E.ta, L = E.L, t = L.text;
+    if (!d) return;
+    const plain = ta.classList.contains('plain'), focused = document.activeElement === ta;
+    const s = plain ? null : focused ? selOf(ta) : E.pend;
+    const map = s ? caretMap(L) : null, z = App.view.zoom;
+    const key = s ? [s.s, s.e, focused, map.key, z, d.style.left, d.style.width, window.devicePixelRatio].join('|') : '';
+    if (key === E.decoKey) return;
+    E.decoKey = key;
+    d.textContent = '';
+    if (!s) return;
+    const box = (x, y, w, hgt, cls, bg) => {
+      const b = document.createElement('div');
+      b.className = cls;
+      b.style.cssText = `left:${x * z}px;top:${y * z}px;width:${w * z}px;height:${hgt * z}px`;
+      if (bg) b.style.background = bg;
+      d.appendChild(b);
+    };
+    if (s.s === s.e) {
+      if (!focused) return;
+      const r = rowOf(map, s.s), hgt = t.size * 1.2;
+      // Tarayıcının imleci gibi: ekranda her zaman ince (1 piksel) ve ekran piksellerine oturur; yarım piksele düşüp
+      // bulanık / kalın görünmez. Rengi imlecin durduğu yerin ekranda görünen parlaklığına göre siyah ya da beyazdır
+      // (beyaz zeminde beyaz metinde de görünür).
+      const dpr = window.devicePixelRatio || 1, tw = Math.max(1, Math.round(dpr)) / dpr, k = (L.flipX ? -1 : 1) * (L.sx || 1);
+      let cx = r.xs[Math.min(r.xs.length - 1, s.s - r.s)] * z;
+      if (!(L.rot % 360)) {
+        const Wd = parseFloat(d.style.width) || 0, o = d.parentElement.getBoundingClientRect().left + (parseFloat(d.style.left) || 0) + Wd / 2;
+        const scr = o + (cx - Wd / 2) * k;
+        cx = (Math.round((scr - tw / 2) * dpr) / dpr + tw / 2 - o) / k + Wd / 2;
+      }
+      const c = document.createElement('div'), lw = tw / Math.abs(k);
+      c.className = 'txt-caret';
+      c.style.cssText = `left:${cx - lw / 2}px;top:${(r.y - hgt / 2) * z}px;width:${lw}px;height:${hgt * z}px`;
+      d.appendChild(c);
+      // renk yalnızca imleç başka bir yere geçince ölçülür (taşırken her karede ekran okunmaz, sürükleme takılmaz)
+      const ik = [s.s, map.key, z].join('|');
+      if (E.inkKey !== ik || !E.ink) { E.ink = caretInk(c) || (t.grad && t.grad.on ? '#ffffff' : t.color); E.inkKey = ik; }
+      c.style.background = E.ink;
+      return;
+    }
+    for (const r of map.rows) {
+      const a = Math.max(s.s, r.s), b = Math.min(s.e, r.e);
+      if (a > b) continue;
+      const x1 = r.xs[a - r.s], x2 = r.xs[b - r.s] + (s.e > r.e ? t.size * 0.25 : 0);
+      if (x2 - x1 > 0.01) box(x1, r.y - map.lh / 2, x2 - x1, map.lh, 'txt-selbox');
+    }
   };
   // Son basılan öğe: yazma alanından panele geçilince yazma sürsün diye
   let lastDown = null;
@@ -647,16 +897,17 @@
     if (!E || document.activeElement !== E.ta) return;
     const s = selOf(E.ta);
     if (s) T.lastSel = { L: E.L, s: s.s, e: s.e, v: E.L.text.value };
+    drawDeco(E);
     if (!selRaf) selRaf = requestAnimationFrame(() => { selRaf = 0; T.syncStyle(); });
   });
 
   App.FONT_GROUPS = [['Fonts on This Computer', SYSTEM_FONTS], ...WEB_GROUPS];
   const T = {
-    id: 'text', name: 'Text', icon: 'text', key: 'T', cursor: 'text',
+    id: 'text', name: 'Text', icon: 'text', key: 'T', cursor: 'default',
     edit: null, bar: null, pendingEdit: null,
 
-    activate() { loadWebFonts(); presetFonts(); },
-    deactivate() { T.finishEdit(); App.xform.drag = null; },
+    activate() { loadWebFonts(); presetFonts(); T.toArrange = false; },
+    deactivate() { T.finishEdit(); App.xform.drag = null; T.toArrange = false; },
     cur() { const L = App.activeLayer(); return L && L.type === 'text' ? L : null; },
 
     addDefault(at, noEdit) {
@@ -680,19 +931,38 @@
       return L;
     },
     focusEditor(selectAll) { const L = T.cur(); if (L) T.startEdit(L, selectAll); },
+    // Şablonu tuvalin ortasına ekler; katmanları birlikte seçili gelir (hemen birlikte taşınabilir)
+    async addTemplate(tp) {
+      const d = App.doc;
+      if (!d) return;
+      T.finishEdit();
+      await templateFonts();
+      let k = Math.max(0.16, Math.min(d.w, d.h) * 0.09 / 100) * 1.2;
+      let ls = templateLayers(tp, k);
+      // tuvalin genişliğine sığsın
+      const wide = Math.max(...ls.map(L => L.canvas.width - 2 * (L._pad || 0)));
+      if (wide > d.w * 0.9) { k *= d.w * 0.9 / wide; ls = templateLayers(tp, k); }
+      for (const L of ls) { L.x = d.w / 2 + L._tdx; L.y = d.h / 2 + L._tdy; delete L._tdx; delete L._tdy; App.addLayer(L); }
+      App.commit('Add Template');
+      UI.selectLayers(ls.map(L => L.id));
+      UI.rebuildPanel();
+    },
 
     /* ---------------- tuval üzerinde yazma
        Yazma alanı, metnin üstüne aynı yazı tipleriyle yerleştirilen saydam bir düzenlenebilir alandır (metin tuvalde
        çizilir; alan yalnızca imleci ve seçimi gösterir). Her stil aralığı ayrı bir parça olarak kurulur, böylece
        karışık yazı tiplerinde de imleç harflerin tam üstünde durur. Seçili bölüme kalın / italik / yazı tipi / renk
        verilebilir; seçim yokken ayarlar metnin tamamına uygulanır. */
-    startEdit(L, selectAll) {
+    // moved: metin kenarından taşınıp bırakıldı; yazmaya geçmeden basılan Delete metnin kendisini siler
+    startEdit(L, selectAll, moved) {
       if (!L || L.type !== 'text') return;
       if (T.edit && T.edit.L === L) { T.edit.ta.focus(); if (selectAll) setSel(T.edit.ta, 0, L.text.value.length); return; }
       T.finishEdit();
       const t = L.text;
-      const ta = h('div', { class: 'txt-inline', contenteditable: 'plaintext-only', spellcheck: 'false', lang: App.i18n.lang });
-      const E = T.edit = { L, ta, start: t.value, startRuns: JSON.stringify(t.runs || null), undo: [], redo: [], pend: null };
+      const ta = h('div', { class: 'txt-inline', contenteditable: 'plaintext-only', spellcheck: 'false', lang: t.lang || App.i18n.lang });
+      // deco: imleç ve seçimin çizildiği katman (alanla aynı yerde ve dönüşümde, tıklamaları geçirir)
+      const deco = h('div', { class: 'txt-deco' });
+      const E = T.edit = { L, ta, deco, moved: !!moved, start: t.value, startRuns: JSON.stringify(t.runs || null), undo: [], redo: [], pend: null };
       fillEditor(E);
       // Yazarken kutunun kenarından tutup sürükleyerek metin taşınabilir (iç kısma tıklamak imleci yerleştirir)
       const nearEdge = e => {
@@ -704,6 +974,31 @@
       ta.addEventListener('pointerdown', e => {
         if (e.button === 0 && nearEdge(e) && !L.locked) { e.preventDefault(); T.resumeEdit = L; return; } // olay tuvale geçer: taşıma başlar
         e.stopPropagation();
+      });
+      // Tıklama ve sürükleme imleci çizimdeki harf sınırlarına göre yerleştirir (tarayıcının kendi yerleşimine göre değil).
+      // Çift tık kelimeyi, üç tık satırı seçer; Shift ile tıklama seçimi uzatır.
+      ta.addEventListener('mousedown', e => {
+        if (e.button !== 0 || ta.classList.contains('plain') || nearEdge(e)) return;
+        e.preventDefault();
+        E.moved = false;
+        const cur = document.activeElement === ta ? getSelection() : null;
+        if (!cur) ta.focus({ preventScroll: true });
+        const v = t.value, i = hitIndex(L, e.clientX, e.clientY);
+        let span = null, anchor = i;
+        if (e.detail === 2) span = wordAt(v, i);
+        else if (e.detail >= 3) { const r = rowOf(caretMap(L), i); span = [r.s, r.e]; }
+        else if (e.shiftKey && cur) { const a = idxOf(ta, cur.anchorNode, cur.anchorOffset); if (a != null) anchor = a; }
+        const pick = j => {
+          if (!span) { setSelDir(ta, anchor, j); return; }
+          const w = e.detail === 2 ? wordAt(t.value, j) : (r => [r.s, r.e])(rowOf(caretMap(L), j));
+          if (j < span[0]) setSelDir(ta, span[1], Math.min(w[0], span[0])); else setSelDir(ta, span[0], Math.max(w[1], span[1]));
+        };
+        pick(i);
+        drawDeco(E);
+        const move = ev => { if (T.edit !== E) return up(); pick(hitIndex(L, ev.clientX, ev.clientY)); drawDeco(E); };
+        const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
       });
       ta.addEventListener('beforeinput', e => {
         // satır sonu her zaman düz "\n" olarak eklenir (tarayıcı kendi blok öğelerini eklemesin)
@@ -717,15 +1012,23 @@
         if (!E.pend) return;
         const p = E.pend; E.pend = null;
         fillEditor(E); setSel(ta, p.s, p.e);
+        drawDeco(E);
       });
       ta.addEventListener('keydown', e => {
         e.stopPropagation();
         const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+        if (E.moved && e.key === 'Delete' && !ctrl && !e.altKey && !e.shiftKey && !L.locked) {
+          e.preventDefault();
+          T.finishEdit();
+          App.actions.deleteLayer();
+          return;
+        }
+        if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) E.moved = false; // yazmaya geçti
         const untouched = t.value === E.start && JSON.stringify(t.runs || null) === E.startRuns;
         if (e.key === 'Escape' && T.added && T.added.L === L && untouched) {
           e.preventDefault();
           const at = T.added.at;
-          T.added = null; T.edit = null; ta.remove();
+          T.added = null; T.edit = null; ta.remove(); deco.remove();
           App.history.go(at);
           return;
         }
@@ -746,23 +1049,34 @@
         if (keepsSel(lastDown) || UI.popupOpen()) {
           const s = T.lastSel && T.lastSel.L === L && T.lastSel.e > T.lastSel.s ? T.lastSel : null;
           if (s) { E.pend = { s: s.s, e: s.e }; fillEditor(E); }
+          drawDeco(E);
           return;
         }
         // başka bir yere (panelin boş bir yerine de) tıklanınca yazma biter ve seçim unutulur
         T.lastSel = null;
         T.finishEdit();
       }, 0));
+      stageOverlay().appendChild(deco);
       stageOverlay().appendChild(ta);
       T.place();
       ta.focus();
       if (selectAll) setSel(ta, 0, t.value.length); else setSel(ta, t.value.length, t.value.length);
+      drawDeco(E);
+      // Kayıttan açılan metnin görüntüsü, yazı tipi tam yüklenmeden ya da eski bir ölçümle çizilmiş olabilir; imleç
+      // ancak görüntü güncel ölçümle çizilmişse harflerin üstüne oturur. Yazı tipleri hazır olunca bir kez yeniden çizilir.
+      const fonts = new Set([styleFont(t, 32), ...(t.runs || []).map(r => styleFont(styleAt(t, r.s), 32))]);
+      loadWebFonts().then(() => Promise.all([...fonts].map(f => document.fonts.load(f).catch(() => {})))).then(() => {
+        if (T.edit !== E) return;
+        L._cmap = null; E.decoKey = null;
+        rerender(L); App.requestRender(); T.place();
+      });
       App.requestRender();
     },
     // Tarayıcının yaptığı düzenlemeyi (yazma, silme, yapıştırma) metne işler; stil aralıkları kaydırılır
     syncEditor(E) {
       const t = E.L.text, nv = domText(E.ta);
       if (nv === t.value) return;
-      const ch = diffText(t.value, nv);
+      const cs = selOf(E.ta), ch = diffText(t.value, nv, cs && cs.s === cs.e ? cs.e : null);
       T.editorSnap(E, ch.ins === 1 && !ch.del);
       shiftRuns(t, ch.a, ch.del, ch.ins);
       t.value = nv;
@@ -811,7 +1125,7 @@
       const E = T.edit;
       if (!E) return;
       T.edit = null; T.added = null;
-      E.ta.remove();
+      E.ta.remove(); E.deco.remove();
       const L = E.L, t = L.text;
       if (!App.doc || !App.doc.layers.includes(L)) return;
       if (!t.value.trim()) {
@@ -838,6 +1152,8 @@
         // eğri metin: harflerin üstünde yazılamaz; metnin altında düz bir kutuda yazılır
         const bx = App.xform.screenBox(L);
         Object.assign(ta.style, { left: (c.x - 140) + 'px', top: (bx.y1 + 10) + 'px', width: '280px', height: 'auto', minHeight: '40px', transform: '', font: '', lineHeight: '', letterSpacing: '', padding: '', textAlign: 'center', caretColor: '', textTransform: t.upper ? 'uppercase' : 'none' });
+        for (const s of ta.children) { s.style.letterSpacing = ''; s._fit = null; }
+        E.deco.hidden = true; drawDeco(E);
         return;
       }
       const sx = Math.abs(L.sx), sy = Math.abs(L.sy);
@@ -849,8 +1165,12 @@
         lineHeight: (t.size * t.lineH * z) + 'px', letterSpacing: (t.spacing * z) + 'px',
         padding: `${pad}px ${pad}px`, textAlign: t.align === 'justify' ? 'left' : t.align,
         textTransform: t.upper ? 'uppercase' : 'none',
-        caretColor: t.grad && t.grad.on ? '#ffffff' : t.color,
+        caretColor: 'transparent', // imleç ayrıca çizilir (drawDeco)
       });
+      Object.assign(E.deco.style, { left: ta.style.left, top: ta.style.top, width: W + 'px', height: ta.style.height, transform: ta.style.transform });
+      E.deco.hidden = false;
+      fitEditor(ta, t, t.size * z, t.spacing * z);
+      drawDeco(E);
       ta.scrollLeft = 0; ta.scrollTop = 0;
     },
 
@@ -920,36 +1240,47 @@
       T.lastSel = null; // tuvale tıklanınca önceki seçim unutulur (ayarlar yine tüm metne uygulanır)
       const L = T.cur();
       if (App.xform.grab(L, p)) return;
-      const hit = App.hitLayer(p.x, p.y, textHit);
-      let target = null;
-      if (L && App.xform.inside(L, p)) target = L;
-      if (!target && hit && hit.type === 'text') target = hit;
-      if (target) {
-        if (target !== L) App.setActive(target.id);
-        if (!target.locked) App.xform.startMove(target, p);
+      // Ctrl / Shift + tıklama: metni seçime ekler ya da çıkarır (birden çok metin birlikte taşınabilir)
+      if (e && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+        const q = textAt(p) || (L && App.xform.inside(L, p) ? L : null);
+        if (q) { UI.toggleLayerSel(q); App.requestRender(); }
         return;
       }
-      // boş yere tıklama: yeni metin; basılı tutup sürükleyerek yerleştirilebilir
-      const N = T.addDefault(p, true);
-      if (N) { App.xform.startMove(N, p); T.pendingEdit = N; }
+      let target = null;
+      if (L && App.xform.inside(L, p)) target = L;
+      if (!target) target = textAt(p);
+      if (target) {
+        // birden çok katman seçiliyse (ör. eklenen şablon) seçim korunur ve hepsi birlikte taşınır
+        const sel = UI.selectedLayers();
+        if (target !== L && !(sel.length > 1 && sel.includes(target))) App.setActive(target.id);
+        else if (target !== L) UI.selectLayerKeep(target.id);
+        if (!target.locked) App.tools.arrange.moveSel(target, p);
+        return;
+      }
+      // Metin olmayan bir katmana tıklanırsa o seçilip taşınır, bırakınca Düzenle aracına geçilir. Boş yere tıklamak
+      // yalnızca seçimi kaldırır; metin "Yeni Metin Ekle" düğmesiyle ya da bir şablonla eklenir.
+      const ly = App.doc.layers;
+      const other = [...ly].reverse().find(q => q.visible && !q.locked && q.type !== 'overlay' && q.type !== 'text' && !App.isBackdrop(q) && App.xform.inside(q, p));
+      if (other) { App.setActive(other.id); App.xform.startMove(other, p); T.toArrange = true; return; }
+      if (L) App.setActive(null);
     },
     onMove(p, e) { App.xform.move(p, e); T.place(); },
     onUp() {
       App.xform.end();
       const N = T.pendingEdit, R = T.resumeEdit;
       T.pendingEdit = null; T.resumeEdit = null;
+      if (T.toArrange) { T.toArrange = false; App.setTool('arrange'); return; }
       if (N) T.startEdit(N, true);
-      else if (R && App.doc.layers.includes(R)) T.startEdit(R);
+      else if (R && App.doc.layers.includes(R)) T.startEdit(R, false, true);
     },
     onDblClick(p) {
-      const hit = App.hitLayer(p.x, p.y, textHit);
-      const L = hit && hit.type === 'text' ? hit : T.cur() && App.xform.inside(T.cur(), p) ? T.cur() : null;
+      const L = textAt(p) || (T.cur() && App.xform.inside(T.cur(), p) ? T.cur() : null);
       if (L) { if (L !== App.activeLayer()) App.setActive(L.id); T.startEdit(L, true); }
     },
     onHover(p) {
       const L = T.cur();
       let c = App.xform.cursor(L, p);
-      if (!c) { const hit = App.hitLayer(p.x, p.y, textHit); c = hit && hit.type === 'text' ? 'pointer' : 'text'; }
+      if (!c) c = textAt(p) ? 'pointer' : 'default';
       App.R.stage.style.cursor = App.keys.space ? 'grab' : c;
     },
     onStepSize(dir) {
@@ -962,6 +1293,7 @@
     },
     drawOverlay(ctx) {
       const L = T.cur();
+      for (const q of UI.selectedLayers()) if (q !== L && q.visible) App.drawLayerOutline(ctx, q, q.locked ? '#ff9f43' : '#4f8cff');
       if (L) App.xform.draw(ctx, L);
     },
     refresh() { T.finishEdit(); UI.rebuildPanel(); },
@@ -971,7 +1303,18 @@
       const L = T.cur();
       T.panelTa = null; T.sizeSl = null;
       body.appendChild(UI.button('Add New Text', () => T.addDefault(), { block: true, primary: true, icon: 'plus' }));
-      if (!L) { body.appendChild(UI.note('Click the canvas to add text. Double-click a text to edit it.')); return; }
+      // şablonlar yalnızca metin ayarları görünmüyorken (seçili metin yokken) gösterilir; önizlemeler yazı tipleri yüklenince çizilir
+      if (!L) {
+        const tGrid = h('div', { class: 'tpl-grid' }, TEMPLATES.map(tp => {
+          const cv = U.canvas(280, 180), b = h('button', { class: 'tpl-btn', title: tp[0].v.replace(/\\n/g, ' '), onclick: () => T.addTemplate(tp) }, cv);
+          const draw = () => { try { templateThumb(tp, cv); } catch (e) { /* */ } };
+          if (templateFonts().done) draw(); else templateFonts().then(draw);
+          return b;
+        }));
+        body.appendChild(UI.section('Templates', [tGrid]));
+        body.appendChild(UI.note('Add text with the button above or pick a template. Double-click a text to edit it.'));
+        return;
+      }
       const t = L.text;
       const upd = (label = 'Edit Text', fast) => {
         rerender(L); App.requestRender(); T.place();
@@ -986,7 +1329,7 @@
       ta.addEventListener('input', () => {
         const nv = ta.value.replace(/\r\n?/g, '\n');
         if (nv === t.value) return;
-        const ch = diffText(t.value, nv);
+        const ch = diffText(t.value, nv, ta.selectionStart === ta.selectionEnd ? ta.selectionEnd : null);
         shiftRuns(t, ch.a, ch.del, ch.ins);
         t.value = nv;
         if (T.edit && T.edit.L === L) fillEditor(T.edit);

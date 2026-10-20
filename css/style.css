@@ -253,11 +253,11 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
 .btn-row { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
 .btn-row .icon-btn { background: var(--panel2); border: 1px solid var(--line); }
 .btn-row .icon-btn:hover { background: var(--panel3); }
-.row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; } /* dar panelde alt satıra geçer */
 .row.between { justify-content: space-between; }
 .row.end { justify-content: flex-end; }
 .row.wrap { flex-wrap: wrap; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
 /* ---------------------------------------------------------------- form alanları */
 .field { margin: 10px 0; }
@@ -286,10 +286,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
 
 .seg { display: flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
 .seg.wrap { flex-wrap: wrap; }
-.seg-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: none; border: 0; border-radius: 7px; padding: 7px 8px; color: var(--text2); font-size: 13px; white-space: nowrap; }
+.seg-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: none; border: 0; border-radius: 7px; padding: 7px 8px; color: var(--text2); font-size: 13px; white-space: nowrap; min-width: 0; }
+/* dar panelde uzun seçenek adları düğmenin içinde alt satıra geçer (taşmaz) */
+.seg:not(.icons) .seg-btn { white-space: normal; text-align: center; line-height: 1.2; }
 .seg-btn:hover { color: var(--text); background: var(--panel3); }
 .seg-btn.on { background: var(--accent); color: #fff; }
-.seg.wrap .seg-btn { flex: 1 1 30%; }
+.seg.wrap .seg-btn { flex: 1 1 30%; min-width: max-content; } /* yazısı sığmayan düğme alt satıra geçer */
 .seg.icons .seg-btn { flex: 0 0 auto; min-width: 34px; }
 .seg.icons .seg-btn span { display: none; }
 /* simge ızgarası: satırlar eşit dolsun (ör. Çizim aracının 12 şekli, 6'lı iki satır) */
@@ -411,7 +413,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
 .tab.on { background: var(--accent); border-color: transparent; color: #fff; }
 
 /* ---------------------------------------------------------------- araç paneli içerikleri */
-.quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; }
 .quick-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 2px 8px; font-size: 11px; color: var(--text2); }
 .quick-btn:hover { border-color: var(--accent); color: var(--text); }
 .quick-row { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0 4px; }
@@ -503,14 +505,16 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
 .ly-row.sel { background: var(--accent-soft); border-color: rgba(108,99,255,.28); border-style: dashed; }
 .ly-row.hidden .ly-thumb, .ly-row.hidden .ly-info { opacity: .45; }
 .ly-row.drag { opacity: .4; }
-.ly-row.ins-a { box-shadow: 0 -3px 0 -1px var(--accent); }
-.ly-row.ins-b { box-shadow: 0 3px 0 -1px var(--accent); }
+.ly-row.drag-hide { display: none; }
+/* sürüklenen katmanın bırakılacağı yer */
+.ly-ph { border: 2px dashed var(--accent); border-radius: 9px; background: var(--accent-soft); box-sizing: border-box; }
 .ly-thumb { width: 40px; height: 40px; border-radius: 6px; flex: none;
   background: repeating-conic-gradient(#cfd3da 0 25%, #fff 0 50%) 0 0 / 10px 10px; border: 1px solid var(--line2); }
 .ly-info { flex: 1; min-width: 0; }
 .ly-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
 .ly-sub { font-size: 12px; color: var(--text3); }
-.ly-ic { background: none; border: 0; color: var(--text2); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex: none; padding: 0; }
+/* satırın sürükleme alanı (::after) simgelerin üstünü kapatmasın, tıklama simgeye gelsin */
+.ly-ic { position: relative; z-index: 1; background: none; border: 0; color: var(--text2); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex: none; padding: 0; }
 .ly-ic:hover { background: var(--panel3); color: var(--text); }
 .ly-ic.off { color: var(--text3); }
 .ly-ic.dimmed { opacity: 0; }
@@ -833,9 +837,16 @@ kbd { background: var(--panel3); border: 1px solid var(--line2); border-bottom-w
 }
 .txt-inline.plain::selection, .txt-inline.plain *::selection { color: #fff; }
 .txt-inline *::selection { background: rgba(79,140,255,.45); color: transparent; }
+/* tuval üzerinde yazarken imleç ve seçim ayrıca çizilir (.txt-deco); tarayıcınınki gizlenir */
+.txt-inline:not(.plain)::selection, .txt-inline:not(.plain) *::selection { background: transparent; }
+.txt-deco { position: absolute; pointer-events: none; transform-origin: 50% 50%; }
+.txt-deco > div { position: absolute; }
+.txt-selbox { background: rgba(79,140,255,.45); }
+.txt-caret { animation: txt-blink 1.06s steps(1) infinite; }
+@keyframes txt-blink { 50% { opacity: 0; } }
 .txt-inline.plain { height: auto; white-space: pre-wrap; }
 /* panelde ayar yapılırken yazma alanında seçili kalan bölüm */
-.txt-inline .sel-pend { background: rgba(79,140,255,.38); }
+.txt-inline.plain .sel-pend { background: rgba(79,140,255,.38); }
 .txt-scope { margin: 0 0 8px; color: var(--accent); }
 
 /* yazı tipi seçici */
@@ -998,3 +1009,71 @@ kbd { background: var(--panel3); border: 1px solid var(--line2); border-bottom-w
 .link-btn:hover { text-decoration: underline; }
 .sec > summary .sec-act { margin-left: auto; margin-right: 6px; width: 26px; height: 26px; }
 .sec > summary .info-i + .sec-act { margin-left: 0; }
+
+/* ---------------------------------------------------------------- telefon (dar ekran)
+   Araçlar en altta yatay şerit; araç paneli şeridin üstünde alttan açılan çekmece (kapalıyken yalnızca başlığı görünür);
+   Katmanlar / Geçmiş sağdan açılan çekmece. Dokunmayla kullanım için düğmeler büyür, fareye özgü düğmeler gizlenir. */
+#btnLayersM { display: none; }
+body.mobile {
+  --m-bar: 58px; --m-head: 50px;
+}
+body.mobile #topbar { padding: 0 6px; gap: 4px; }
+body.mobile .brand b { display: none; }
+body.mobile #menubar { margin-left: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; min-width: 0; flex: 1; }
+body.mobile #menubar::-webkit-scrollbar { display: none; }
+body.mobile #menubar .mb-item { padding: 8px 8px; white-space: nowrap; }
+body.mobile #topbar .spacer, body.mobile #btnHelp { display: none; }
+body.mobile #btnSave2 span { display: none; }
+body.mobile #btnLayersM { display: flex; }
+body.mobile #workspace { position: relative; padding-bottom: calc(var(--m-bar) + var(--m-head)); }
+body.mobile.m-open #workspace { padding-bottom: calc(var(--m-bar) + 46vh); }
+body.mobile #toolbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; width: auto; height: var(--m-bar);
+  flex-direction: row; justify-content: flex-start; padding: 0 6px; gap: 2px; overflow-x: auto; overflow-y: hidden;
+  border: 0 !important; border-top: 1px solid var(--line) !important; scrollbar-width: none;
+}
+body.mobile #toolbar::-webkit-scrollbar { display: none; }
+body.mobile .tool-btn { width: 46px; height: 46px; }
+body.mobile .pane-resizer { display: none; }
+body.mobile .dock-col.m-tool {
+  position: fixed; left: 0; right: 0; bottom: var(--m-bar); z-index: 35; height: var(--m-head);
+  border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.35);
+  transition: height .2s ease; overflow: hidden;
+}
+body.mobile.m-open .dock-col.m-tool { height: 46vh; }
+body.mobile .m-tool .tp-head { cursor: pointer; position: relative; padding-top: 14px; }
+body.mobile .m-tool .tp-head::before { content: ''; position: absolute; left: 50%; top: 5px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line); }
+body.mobile .dock-col.m-sidebar {
+  position: fixed; top: 44px; right: 0; bottom: var(--m-bar); z-index: 45; width: min(86vw, 330px);
+  border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.4);
+  transform: translateX(105%); transition: transform .2s ease;
+}
+body.mobile.m-side .dock-col.m-sidebar { transform: none; }
+/* alt çubuk: yakınlaştırma, sığdır, geri al / yinele kalır */
+body.mobile #bottombar { height: 40px; padding: 0 4px; }
+body.mobile #docInfo, body.mobile #cursorPos, body.mobile #btnGrid, body.mobile #btnSnap, body.mobile #btnSpace, body.mobile #btnFree,
+body.mobile #btnRotStep, body.mobile #btnRotSnap, body.mobile #bottombar .bb-sep, body.mobile #btnCompare span { display: none; }
+body.mobile .tp-body { padding: 8px 8px 24px 12px; }
+body.mobile .icon-btn { min-width: 36px; min-height: 36px; }
+
+
+/* metin şablonları */
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.tpl-btn { padding: 0; border: 1px solid var(--line); border-radius: 10px; background: #2a2d35; aspect-ratio: 14 / 9; overflow: hidden; display: flex; align-items: center; justify-content: center; transition: border-color .12s, transform .12s; }
+.tpl-btn:hover { border-color: var(--accent); }
+.tpl-btn:active { transform: scale(.97); }
+.tpl-btn canvas { width: 100%; height: 100%; display: block; }
+
+/* Dar panelde yazılar kesilmesin ya da düğmeden taşmasın: düğme en uzun kelimesinden dar olmaz, uzun adlar alt satıra
+   geçer, sığmayan düğmeler bir alt sıraya iner */
+.tp-body .seg:not(.icons) { flex-wrap: wrap; }
+.tp-body .seg:not(.icons) .seg-btn { min-width: min-content; }
+.tp-body .quick-row { flex-wrap: wrap; }
+.tp-body .quick-row .btn, .tp-body .btn-row.two > .btn { min-width: min-content; white-space: normal; text-align: center; line-height: 1.2; }
+.tp-body .btn-row.two > .btn span { white-space: normal; overflow: visible; }
+.fx-card span { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.25; }
+/* alt çubuk dar alanda kesilmez, yatay kaydırılır */
+#bottombar { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+#bottombar::-webkit-scrollbar { display: none; }
+#bottombar .bb-group { flex: none; }
+#bottombar .bb-group:first-child { overflow: visible; }

@@ -10,6 +10,9 @@
   const K = id => (App.shortcuts ? App.shortcuts.label(id) : '');
   const $ = id => document.getElementById(id);
   const WMIN = 200, WMAX = 560;
+  // araç panelinin sütunu daha fazla daraltılamaz: düğme ve seçenek adları sığmaz hâle gelir
+  const TOOL_WMIN = 270;
+  const minW = c => (c.g && c.g.some(g => g.t.includes('tool')) ? TOOL_WMIN : WMIN);
   const PANES = { tool: ['Tool Panel', 'adjust'], layers: ['Layers', 'layers'], history: ['History', 'history'] };
   const EL = { tool: 'toolpanel', layers: 'layersPane', history: 'historyPane' };
   const defW = id => (id === 'tool' ? 320 : 250);
@@ -25,7 +28,7 @@
     let cols = clone(d).filter(c => c === 'stage' || (c && Array.isArray(c.g)));
     for (const c of cols) {
       if (c === 'stage') continue;
-      c.w = U.clamp(+c.w || 260, WMIN, WMAX);
+      c.w = U.clamp(+c.w || 260, minW(c), WMAX);
       c.g = c.g.filter(g => g && Array.isArray(g.t)).map(g => {
         g.t = g.t.filter(id => PANES[id] && !seen.has(id) && seen.add(id));
         if (!g.t.includes(g.a)) g.a = g.t[0];
@@ -104,7 +107,15 @@
   };
 
   let hideOthers = false;     // Katmanlar ve Geçmiş geçici olarak gizli (Tab tuşu)
+  /* Telefon (dar ekran): kayıtlı düzen kullanılmaz. Araçlar en altta yatay bir şerittir; araç paneli bunun üstünde
+     alttan açılan bir çekmecedir (başlığına dokununca açılır / kapanır); Katmanlar ve Geçmiş üst çubuktaki düğmeyle
+     sağdan açılan çekmecededir. Paneller sürüklenip taşınmaz, genişlik tutamaçları yoktur. */
+  const MQ = window.matchMedia ? matchMedia('(max-width: 760px)') : null;
+  let mTab = 'layers';
   const L = App.layout = {
+    isMobile() { return !!(MQ && MQ.matches); },
+    sheet(open) { document.body.classList.toggle('m-open', open == null ? !document.body.classList.contains('m-open') : !!open); App.resizeView && setTimeout(() => App.resizeView(), 0); },
+    sideSheet(open) { document.body.classList.toggle('m-side', open == null ? !document.body.classList.contains('m-side') : !!open); },
     get() { const c = norm(App.prefs.dock); App.prefs.dock = c; return c; },
     save(cols) { App.setPref('dock', cols); L.apply(); },
     // Panel çalışma alanının hangi tarafında
@@ -132,6 +143,29 @@
       UI.buildToolbar();
       L.save(null);
     },
+    // Araç panelini gizle / göster (telefonda alttaki çekmeceyi açar / kapatır)
+    toggleToolPanel(show) {
+      if (L.isMobile()) { L.sheet(show == null ? undefined : show); return; }
+      const hide = show == null ? !document.body.classList.contains('tp-hidden') : !show;
+      if (hide === document.body.classList.contains('tp-hidden')) return;
+      document.body.classList.toggle('tp-hidden', hide);
+      L.syncToolHidden();
+      App.resizeView && setTimeout(() => App.resizeView(), 0);
+    },
+    // Gizliyken araç panelinin sütunu (tek başınaysa) genişlik tutamacıyla birlikte tamamen kalkar; sütunda başka
+    // paneller de varsa yalnızca araç panelinin grubu kalkar
+    syncToolHidden() {
+      const hide = document.body.classList.contains('tp-hidden') && !L.isMobile();
+      const tp = $('toolpanel'), grp = tp.closest('.dock-grp'), col = tp.closest('.dock-col');
+      if (!grp || !col) return;
+      const solo = col.querySelectorAll(':scope > .dock-grp').length === 1;
+      const rz = col.nextElementSibling && col.nextElementSibling.classList.contains('pane-resizer') ? col.nextElementSibling : null;
+      col.style.display = hide && solo ? 'none' : '';
+      if (rz) rz.style.display = hide && solo ? 'none' : '';
+      grp.style.display = hide && !solo ? 'none' : '';
+      const sp = grp.previousElementSibling && grp.previousElementSibling.classList.contains('rp-split') ? grp.previousElementSibling : grp.nextElementSibling && grp.nextElementSibling.classList.contains('rp-split') ? grp.nextElementSibling : null;
+      if (sp) sp.style.display = hide && !solo ? 'none' : '';
+    },
     toggleOthers() {
       hideOthers = !hideOthers;
       document.body.classList.toggle('no-right', hideOthers);
@@ -154,8 +188,11 @@
       const ws = $('workspace'), hold = $('paneHold');
       if (!ws) return;
       UI.closePopups();
+      const mob = L.isMobile();
+      document.body.classList.toggle('mobile', mob);
       let cols = L.get();
-      if (hideOthers) {
+      if (mob) cols = [{ w: 0, g: [{ t: ['tool'], a: 'tool', f: 1 }] }, 'stage', { w: 0, g: [{ t: ['layers', 'history'], a: mTab, f: 1 }] }];
+      else if (hideOthers) {
         cols = clone(cols);
         for (const c of cols) if (c !== 'stage') for (const g of c.g) g.t = g.t.filter(id => id === 'tool');
         cols = cleanup(cols);
@@ -168,7 +205,7 @@
       cols.forEach((c, ci) => {
         if (c === 'stage') { $('stageWrap').style.order = n++; return; }
         const left = ci < si;
-        const col = h('div', { class: 'dock-col', 'data-ci': ci, style: { width: c.w + 'px', borderLeft: left ? '0' : line, borderRight: left ? line : '0' } });
+        const col = h('div', { class: 'dock-col' + (mob ? (left ? ' m-tool' : ' m-sidebar') : ''), 'data-ci': ci, style: mob ? {} : { width: c.w + 'px', borderLeft: left ? '0' : line, borderRight: left ? line : '0' } });
         c.g.forEach((g, gi) => {
           if (gi) col.appendChild(splitter(c, gi));
           col.appendChild(group(g, ci, gi));
@@ -185,10 +222,13 @@
       });
       const bg = { dark: '#0b0c10', gray: '#3a3d44', light: '#d9dce2' }[App.prefs.stageBg];
       if (bg) document.documentElement.style.setProperty('--stage', bg); else document.documentElement.style.removeProperty('--stage');
+      L.syncToolHidden();
       App.resizeView && setTimeout(() => App.resizeView(), 0);
     },
     // Araç değişince sekme adı güncellenir; araç paneli bir sekmedeyse öne gelir
     onTool() {
+      if (document.body.classList.contains('tp-hidden')) L.toggleToolPanel(true); // başka araca geçilince panel yine açılır
+      if (L.isMobile()) { if (document.body.classList.contains('at-editor')) L.sheet(true); document.querySelectorAll('.rp-tab[data-pane="tool"]').forEach(b => { b.innerHTML = App.icon(paneIcon('tool'), 16) + `<span>${App.t(paneName('tool'))}</span>`; }); return; }
       const cols = L.get(), f = findPane(cols, 'tool');
       if (f && f.g.t.length > 1 && f.g.a !== 'tool') { f.g.a = 'tool'; L.save(cols); return; }
       document.querySelectorAll('.rp-tab[data-pane="tool"]').forEach(b => { b.innerHTML = App.icon(paneIcon('tool'), 16) + `<span>${App.t(paneName('tool'))}</span>`; });
@@ -198,6 +238,12 @@
       document.addEventListener('pointerdown', e => {
         if (e.button !== 0) return;
         const t = e.target;
+        if (L.isMobile()) {
+          // telefonda başlığa dokunmak araç panelini açar / kapatır; tuvale dokunmak sağ çekmeceyi kapatır
+          if (t.closest('#toolpanel .tp-head') && !t.closest('button,input,select,textarea')) { L.sheet(); return; }
+          if (t.closest('#stage')) L.sideSheet(false);
+          return;
+        }
         if (t.closest('#toolpanel .tp-head') && !t.closest('button,input,select,textarea')) return paneDrag(e, 'tool');
         const tab = t.closest('.dock-col .rp-tab, .dock-col .rp-phead');
         if (tab) return paneDrag(e, tab.dataset.pane);
@@ -205,6 +251,11 @@
       $('toolpanel').title = '';
       App.on('prefs', k => { if (k === 'stageBg') L.apply(); });
       App.on('tool', () => L.onTool());
+      if (MQ && MQ.addEventListener) MQ.addEventListener('change', () => L.apply());
+      // telefonda Katmanlar düğmesi (üst çubuk)
+      const lb = h('button', { id: 'btnLayersM', class: 'icon-btn', title: 'Layers', html: App.icon('layers', 18), onclick: () => L.sideSheet() });
+      const st = $('btnSettings');
+      if (st) st.before(lb);
       L.apply();
     },
   };
@@ -217,6 +268,7 @@
         class: 'rp-tab' + (id === g.a ? ' on' : ''), 'data-pane': id, title: 'Click, or drag to move it somewhere else',
         html: App.icon(paneIcon(id), 16) + `<span>${App.t(paneName(id))}</span>`,
         onclick: () => {
+          if (L.isMobile()) { mTab = id; L.apply(); return; }
           const cols = L.get(), f = findPane(cols, id);
           if (f) { f.g.a = id; L.save(cols); }
         },
@@ -258,7 +310,7 @@
       const x0 = e.clientX, w0 = rectOf(col).width;
       const mv = ev => {
         const dx = ev.clientX - x0;
-        c.w = Math.round(U.clamp(w0 + (left ? dx : -dx), WMIN, WMAX));
+        c.w = Math.round(U.clamp(w0 + (left ? dx : -dx), minW(c), WMAX));
         col.style.width = c.w + 'px';
         App.resizeView();
       };
@@ -275,7 +327,7 @@
 
   // Paneli sürükleyip bırakma: başka bir grubun sekmesi, bir grubun üstü/altı ya da yeni bir sütun
   function paneDrag(e, id) {
-    if (hideOthers) return;
+    if (hideOthers || L.isMobile()) return;
     drag(e, {
       label: paneName(id), icon: paneIcon(id),
       zone: (x, y) => {

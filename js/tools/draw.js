@@ -1,5 +1,5 @@
 'use strict';
-/* Çizim aracı: fırça, fosforlu kalem, sprey, neon, silgi, kova ve şekiller */
+/* Çizim aracı: fırça, fosforlu kalem, sprey, neon, silgi, kova, şekiller ve eğri (Bezier) */
 (() => {
   const { U, ui: UI } = App;
   const h = U.h;
@@ -9,13 +9,27 @@
     ['eraser', 'Eraser', 'eraser'], ['bucket', 'Bucket', 'bucket'],
   ];
   const SHAPE_LIST = [
-    ['sline', 'Line', 'line'], ['sarrow', 'Arrow', 'arrow'], ['sdarrow', 'Double Arrow', 'dblarrow'], ['srect', 'Square', 'square'],
+    ['sline', 'Line', 'line'], ['scurve', 'Curve', 'curve'], ['sarrow', 'Arrow', 'arrow'], ['sdarrow', 'Double Arrow', 'dblarrow'], ['srect', 'Square', 'square'],
     ['sellipse', 'Circle', 'circle'], ['stri', 'Triangle', 'triangle'], ['sstar', 'Star', 'star'], ['sheart', 'Heart', 'heart'], ['sbubble', 'Speech Bubble', 'bubble'],
-    ['sdiamond', 'Diamond', 'diamond'], ['spenta', 'Pentagon', 'pentagon'], ['shex', 'Hexagon', 'hexagon'],
+    ['spenta', 'Pentagon', 'pentagon'], ['shex', 'Hexagon', 'hexagon'],
   ];
   const SHAPES = new Set(SHAPE_LIST.map(s => s[0]));
   const LINES = new Set(['sline', 'sarrow', 'sdarrow']);
-  const BOXES = new Set(['srect', 'sellipse', 'stri', 'sstar', 'sheart', 'sbubble', 'sdiamond', 'spenta', 'shex']);
+  const BOXES = new Set(['srect', 'sellipse', 'stri', 'sstar', 'sheart', 'sbubble', 'spenta', 'shex']);
+  const CURVE = 'scurve';
+  /* Eğri: tıklayınca köşe noktası, basılı tutup sürükleyince eğri (tutamaçlı) nokta eklenir. Noktalar ve tutamaçlar
+     sonradan sürüklenerek düzeltilir; çizginin üstüne tıklamak araya nokta ekler; Alt + nokta tutamaçlarını baştan
+     çıkarır, Alt + tutamaç onu karşısından bağımsız oynatır. İlk noktaya tıklamak eğriyi kapatıp bitirir; Enter ya da
+     çift tıklama açık bırakarak bitirir; Esc vazgeçer; Ctrl+Z son noktayı siler. Noktalar doküman koordinatındadır. */
+  const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+  const bez = (a, b, c, d, t) => { const ab = lerp(a, b, t), bc = lerp(b, c, t), cd = lerp(c, d, t), abc = lerp(ab, bc, t), bcd = lerp(bc, cd, t); return { ab, bc, cd, abc, bcd, m: lerp(abc, bcd, t) }; };
+  const curveSegs = C => { const P = C.pts, out = []; for (let i = 1; i < P.length; i++) out.push([i - 1, i]); if (C.closed && P.length > 1) out.push([P.length - 1, 0]); return out; };
+  const curvePath = (g, C, map = q => q) => {
+    const P = C.pts, s0 = map(P[0]);
+    g.beginPath(); g.moveTo(s0.x, s0.y);
+    for (const [i, j] of curveSegs(C)) { const c1 = map(P[i].out), c2 = map(P[j].in), e = map(P[j]); g.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, e.x, e.y); }
+    if (C.closed) g.closePath();
+  };
   const PATHS = new Set(['marker', 'neon']); // tüm çizgi her karede tek yol olarak yeniden çizilir
 
   const T = {
@@ -29,9 +43,170 @@
     brushSize() { return SHAPES.has(T.brush) || T.brush === 'bucket' ? 0 : T.brush === 'marker' ? T.size * 1.6 : T.size; },
 
     activate() { },
-    deactivate() { App.strokePreview = null; T.stroke = null; App.clearSnap(); },
+    deactivate() { App.strokePreview = null; T.stroke = null; T.curve = null; App.clearSnap(); },
     // şekil çizmeden önce başlangıcın yapışacağı hizalama çizgisi gösterilir
-    onHover(p, e) { if (SHAPES.has(T.brush)) App.hoverSnap(p, e); else App.clearSnap(); },
+    onHover(p, e) {
+      if (T.brush === CURVE) { T.curveHover = p; App.clearSnap(); if (T.curve) App.requestRender(); return; }
+      if (SHAPES.has(T.brush)) App.hoverSnap(p, e); else App.clearSnap();
+    },
+    // yarım kalan eğri: araç değişirken "Uygula" sorulur, Enter bitirir, Esc vazgeçer, Ctrl+Z son noktayı siler
+    isDirty() { return !!(T.curve && T.curve.pts.length); },
+    apply() { T.finishCurve(); },
+    // Esc ile vazgeçilen eğri saklanır: hemen ardından Ctrl+Z onu olduğu gibi geri getirir
+    cancel() { if (T.curve) { if (T.curve.pts.length) T.curveGone = T.curve; T.curve = null; App.requestRender(); } },
+    curveCanUndo() { return !!((T.curve && T.curve.pts.length) || T.curveGone); },
+    curveUndo() {
+      if (!T.curve && T.curveGone) { T.curve = T.curveGone; T.curve.drag = null; T.curveGone = null; App.requestRender(); return true; }
+      const C = T.curve;
+      if (!C || !C.pts.length) return false;
+      if (C.closed) C.closed = false; else C.pts.pop();
+      if (!C.pts.length) T.curve = null;
+      App.requestRender();
+      return true;
+    },
+    onDblClick() { if (T.brush === CURVE && T.curve) T.finishCurve(); },
+
+    // Eğride imlecin altındaki şey (ekran pikseliyle): tutamaç, nokta ya da çizginin üstü
+    curveHit(p) {
+      const C = T.curve, P = C.pts, scr = q => App.docToScreen(q.x, q.y);
+      const near = (q, r) => { const s = scr(q); return Math.hypot(s.x - p.sx, s.y - p.sy) <= r; };
+      for (let i = P.length - 1; i >= 0; i--) for (const k of ['out', 'in']) if (T.hasHandle(P[i], k) && near(P[i][k], 7)) return { kind: k, i };
+      for (let i = P.length - 1; i >= 0; i--) if (near(P[i], 8)) return { kind: 'pt', i };
+      let best = null;
+      for (const [i, j] of curveSegs(C)) for (let n = 1; n < 48; n++) {
+        const t = n / 48, s = scr(bez(P[i], P[i].out, P[j].in, P[j], t).m), d = Math.hypot(s.x - p.sx, s.y - p.sy);
+        if (d <= 6 && (!best || d < best.d)) best = { kind: 'seg', i, j, t, d };
+      }
+      return best;
+    },
+    hasHandle(q, k) { return Math.hypot(q[k].x - q.x, q[k].y - q.y) > 0.01; },
+    curveDown(p, e) {
+      if (!T.curve) T.curveGone = null; // yeni eğri başladı: vazgeçilen eski eğri artık geri gelmez
+      const C = T.curve || (T.curve = { pts: [], closed: false });
+      const P = C.pts, hit = P.length ? T.curveHit(p) : null;
+      if (hit && (hit.kind === 'in' || hit.kind === 'out')) { C.drag = { mode: hit.kind, i: hit.i }; return; }
+      if (hit && hit.kind === 'pt') {
+        if (hit.i === 0 && P.length > 1 && !C.closed && !e.altKey) { C.closed = true; T.finishCurve(); return; }
+        const q = P[hit.i];
+        if (e.altKey) { q.in = { x: q.x, y: q.y }; q.out = { x: q.x, y: q.y }; C.drag = { mode: 'pull', i: hit.i }; return; }
+        C.drag = { mode: 'pt', i: hit.i, last: { x: p.x, y: p.y } };
+        return;
+      }
+      if (hit && hit.kind === 'seg') {
+        // çizginin üstü: eğri bozulmadan o noktadan ikiye bölünür, yeni nokta hemen sürüklenebilir
+        const a = P[hit.i], b = P[hit.j], r = bez(a, a.out, b.in, b, hit.t);
+        a.out = r.ab; b.in = r.cd;
+        const at = hit.j === 0 ? P.length : hit.j;
+        P.splice(at, 0, { x: r.m.x, y: r.m.y, in: r.abc, out: r.bcd });
+        C.drag = { mode: 'pt', i: at, last: { x: p.x, y: p.y } };
+        App.requestRender();
+        return;
+      }
+      if (C.closed) return;
+      let q = { x: p.x, y: p.y };
+      // Shift: yeni nokta öncekine göre 45 derecelik açılarla
+      const prev = P[P.length - 1];
+      if (prev && e.shiftKey && !App.prefs.free) {
+        const ang = Math.round(Math.atan2(q.y - prev.y, q.x - prev.x) / (Math.PI / 4)) * (Math.PI / 4), len = Math.hypot(q.x - prev.x, q.y - prev.y);
+        q = { x: prev.x + Math.cos(ang) * len, y: prev.y + Math.sin(ang) * len };
+      }
+      P.push({ x: q.x, y: q.y, in: { x: q.x, y: q.y }, out: { x: q.x, y: q.y } });
+      C.drag = { mode: 'pull', i: P.length - 1 };
+      App.requestRender();
+    },
+    curveMove(p, e) {
+      const C = T.curve, D = C && C.drag;
+      T.curveHover = p;
+      if (!D) { App.requestRender(); return; }
+      const q = C.pts[D.i];
+      if (D.mode === 'pull') {
+        q.out = { x: p.x, y: p.y }; q.in = { x: 2 * q.x - p.x, y: 2 * q.y - p.y };
+      } else if (D.mode === 'in' || D.mode === 'out') {
+        q[D.mode] = { x: p.x, y: p.y };
+        // karşı tutamaç aynı doğrultuda kalır (yumuşak nokta); Alt ile bağımsız oynar
+        const o = D.mode === 'in' ? 'out' : 'in', lo = Math.hypot(q[o].x - q.x, q[o].y - q.y), dx = p.x - q.x, dy = p.y - q.y, ld = Math.hypot(dx, dy);
+        if (!e.altKey && lo > 0.01 && ld > 0.01) q[o] = { x: q.x - dx / ld * lo, y: q.y - dy / ld * lo };
+      } else if (D.mode === 'pt') {
+        const dx = p.x - D.last.x, dy = p.y - D.last.y;
+        for (const k of [q, q.in, q.out]) { k.x += dx; k.y += dy; }
+        D.last = { x: p.x, y: p.y };
+      }
+      App.requestRender();
+    },
+    curveUp() {
+      const C = T.curve, D = C && C.drag;
+      if (!D) return;
+      C.drag = null;
+      // çok az sürüklenen yeni nokta köşe noktası olur
+      const q = C.pts[D.i];
+      if (D.mode === 'pull' && Math.hypot(q.out.x - q.x, q.out.y - q.y) * App.view.zoom < 3) { q.in = { x: q.x, y: q.y }; q.out = { x: q.x, y: q.y }; }
+      App.requestRender();
+    },
+    // Eğriyi katmana çizer: "Yeni katmana çiz" açıksa kendi katmanına (kutusu eğriyi sarar), değilse seçili katmana
+    finishCurve() {
+      const C = T.curve;
+      T.curve = null; T.curveGone = null;
+      App.requestRender();
+      if (!C || C.pts.length < 2) return;
+      const L = T.target();
+      if (!L) return;
+      if (T.created !== L) T.growToDoc(L);
+      App.beginPixelEdit(L);
+      const g = L.canvas.getContext('2d');
+      g.save();
+      g.setTransform(App.layerMatrix(L).inverse()); // doküman koordinatında çizilir
+      g.globalAlpha = T.opacity / 100;
+      T.curveStyle(g, C, 1);
+      g.restore();
+      if (!L.sheet) App.trimLayer(L);
+      T.created = null;
+      App.commit('Draw Curve');
+    },
+    // Eğrinin çizgisi ve dolgusu; z: doküman pikselinin hedefteki boyu, map: doküman → hedef koordinatı
+    curveStyle(g, C, z, map) {
+      const P = C.pts, xs = P.map(q => q.x), ys = P.map(q => q.y), w = T.lineW;
+      const bx = Math.min(...xs) - w / 2, by = Math.min(...ys) - w / 2, bw = Math.max(...xs) - Math.min(...xs) + w, bh = Math.max(...ys) - Math.min(...ys) + w;
+      g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = w * z;
+      if (T.dashed) g.setLineDash([w * z * T.dashLen / 10, w * z * T.dashGap / 10]);
+      const o = map ? map({ x: bx, y: by }) : { x: bx, y: by }, box = [o.x, o.y, Math.max(1, bw * z), Math.max(1, bh * z)];
+      g.strokeStyle = T.gradOn && T.grad ? U.gradFill(g, T.grad, ...box) : T.color;
+      g.fillStyle = T.fillGradOn && T.fillGrad ? U.gradFill(g, T.fillGrad, ...box) : T.color2;
+      curvePath(g, C, map);
+      if (T.fill) g.fill();
+      if (T.outline || !T.fill) g.stroke();
+      g.setLineDash([]);
+    },
+    drawOverlay(ctx) {
+      const C = T.curve;
+      if (!C || !C.pts.length) return;
+      const z = App.view.zoom, scr = q => App.docToScreen(q.x, q.y), P = C.pts;
+      ctx.save();
+      ctx.globalAlpha = T.opacity / 100;
+      if (P.length > 1) T.curveStyle(ctx, C, z, scr);
+      ctx.globalAlpha = 1;
+      // son noktadan imlece önizleme çizgisi
+      const hv = T.curveHover, last = P[P.length - 1];
+      if (hv && !C.drag && !C.closed) {
+        const a = scr(last), c1 = scr(last.out), b = scr(hv);
+        ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(79,140,255,.9)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.bezierCurveTo(c1.x, c1.y, b.x, b.y, b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
+      }
+      // ince kılavuz yol, tutamaçlar ve noktalar (ilk nokta mavi: tıklayınca şekil kapanır)
+      ctx.strokeStyle = '#4f8cff'; ctx.lineWidth = 1;
+      if (P.length > 1) { curvePath(ctx, C, scr); ctx.stroke(); }
+      for (const q of P) for (const k of ['in', 'out']) {
+        if (!T.hasHandle(q, k)) continue;
+        const a = scr(q), b = scr(q[k]);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, 3.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      P.forEach((q, i) => {
+        const s = scr(q);
+        ctx.fillStyle = i === 0 && !C.closed && P.length > 1 ? '#4f8cff' : '#fff';
+        ctx.fillRect(s.x - 4, s.y - 4, 8, 8); ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
+      });
+      ctx.restore();
+    },
     setSize(v) { T.size = v; if (T.sizeSl) T.sizeSl.set(v); },
 
     target() {
@@ -94,21 +269,25 @@
       const pts = [[0, 0], [d.w, 0], [d.w, d.h], [0, d.h]].map(([x, y]) => App.docToLayer(L, x, y));
       const x0 = Math.floor(Math.min(0, ...pts.map(q => q.x))), y0 = Math.floor(Math.min(0, ...pts.map(q => q.y)));
       const x1 = Math.ceil(Math.max(W, ...pts.map(q => q.x))), y1 = Math.ceil(Math.max(H, ...pts.map(q => q.y)));
-      if ((x0 === 0 && y0 === 0 && x1 === W && y1 === H) || (x1 - x0) * (y1 - y0) > 64e6) return;
+      if ((x0 === 0 && y0 === 0 && x1 === W && y1 === H) || (x1 - x0) * (y1 - y0) > 64e6) return false;
       const c = U.canvas(x1 - x0, y1 - y0);
       c.getContext('2d').drawImage(L.canvas, -x0, -y0);
       const ctr = App.layerToDoc(L, (x0 + x1) / 2, (y0 + y1) / 2);
       L.canvas = c; L.x = ctr.x; L.y = ctr.y;
+      return true;
     },
     isDrawLayer: L => L.type === 'raster' && L.paint && !L.shapeLayer,
 
     onDown(p, e) {
       if (!App.doc) return;
       if (T.brush === 'bucket') { T.bucket(p); return; }
+      if (T.brush === CURVE) { T.curveDown(p, e); return; }
       const L = T.target();
       if (!L) return;
       T.L = L;
-      if (T.isDrawLayer(L) && T.brush !== 'eraser') T.growToDoc(L);
+      // Seçili katmana çizilen şekil ya da fırça katmanın kutusunun dışına da taşabilsin (ör. küçük bir kare katmanına
+      // yıldız): katman çizim boyunca tuval boyuna büyütülür, bitince çizime göre yeniden kırpılır
+      T.grew = T.brush !== 'eraser' && T.created !== L && T.growToDoc(L);
       // şekillerde başlangıç noktası kılavuzlara yapışır
       const pp = SHAPES.has(T.brush) ? App.snapStart(p, e) : p;
       App.snapDot = null;
@@ -129,6 +308,7 @@
       App.requestRender();
     },
     onMove(p, e) {
+      if (T.brush === CURVE) { T.curveMove(p, e); return; }
       const S = T.stroke;
       if (!S) return;
       // kutu şekillerinde Alt merkezden çizmeyi değiştirir; hizalamayı yalnızca Ctrl tersine çevirir
@@ -145,8 +325,13 @@
         }
         const ux = Math.cos(k.dir), uy = Math.sin(k.dir), t = dx * ux + dy * uy;
         q = { x: k.a.x + ux * t, y: k.a.y + uy * t };
-        if (PATHS.has(b)) S.pts.length = k.i;
-      } else if (S.lock) S.lock = null;
+        // yumuşatılmış yolda düz parçanın başı köşe olsun (nokta iki kez): normal fırçadaki gibi düz gider
+        if (PATHS.has(b)) { S.pts.length = k.i; S.pts.push(k.a); }
+      } else if (S.lock) {
+        S.lock = null;
+        // Shift bırakılınca düz parçanın sonu da köşe olur; imlecin yeni yerine normal fırça gibi düz bağlanır
+        if (PATHS.has(b)) S.pts.push(S.last);
+      }
       if (b === 'normal' || b === 'eraser') {
         App.interp(S.last, q, Math.max(0.7, (T.size / S.sc) * 0.12), (x, y) => T.stamp(x, y), S.st);
       } else if (b === 'spray') {
@@ -168,6 +353,7 @@
       App.requestRender();
     },
     onUp() {
+      if (T.brush === CURVE) { T.curveUp(); return; }
       const S = T.stroke;
       if (!S) return;
       if (S.raf) cancelAnimationFrame(S.raf);
@@ -185,7 +371,8 @@
       x.drawImage(S.canvas, 0, 0);
       x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
       if (shape && T.created === L) { T.fitShapeLayer(L, S, sp.alpha); App.trimLayer(L); }
-      else if (T.isDrawLayer(L) && !L.sheet) App.trimLayer(L); // elle eklenen boş katman tuval boyunda kalır
+      else if ((T.isDrawLayer(L) || T.grew) && !L.sheet) App.trimLayer(L); // elle eklenen boş katman tuval boyunda kalır
+      T.grew = false;
       T.created = null;
       App.commit(T.brush === 'eraser' ? 'Eraser' : shape ? 'Draw Shape' : T.brush === 'marker' ? 'Highlighter' : 'Draw');
     },
@@ -283,7 +470,16 @@
         id.data[k] = fr; id.data[k + 1] = fg; id.data[k + 2] = fb; id.data[k + 3] = fa;
       }
       c.getContext('2d').putImageData(id, 0, 0);
-      App.addLayer(App.newLayer(c, { name: 'Fill', paint: true, x: x0 + cw / 2, y: y0 + ch / 2 }));
+      // Seçili katman bir çizim katmanıysa (fırça / kova katmanı) dolgu onun üstüne yapılır; fotoğraf gibi diğer
+      // katmanlar bozulmasın diye o durumda yeni bir dolgu katmanı açılır
+      const L = App.activeLayer();
+      if (L && L.visible && !L.locked && T.isDrawLayer(L)) {
+        App.beginPixelEdit(L);
+        T.growToDoc(L);
+        const g = L.canvas.getContext('2d');
+        g.save(); g.setTransform(App.layerMatrix(L).inverse()); g.globalAlpha = 1; g.drawImage(c, x0, y0); g.restore();
+        if (!L.sheet) App.trimLayer(L);
+      } else App.addLayer(App.newLayer(c, { name: 'Fill', paint: true, x: x0 + cw / 2, y: y0 + ch / 2 }));
       App.commit('Bucket Fill');
     },
 
@@ -336,7 +532,6 @@
         if (k === 'srect') g.roundRect(x0, y0, W, H, Math.min(W, H) / 2 * T.radius / 100);
         else if (k === 'sellipse') g.ellipse(cx, cy, W / 2, H / 2, 0, 0, Math.PI * 2);
         else if (k === 'stri') { g.moveTo(cx, y0); g.lineTo(x0 + W, y0 + H); g.lineTo(x0, y0 + H); g.closePath(); }
-        else if (k === 'sdiamond') { g.moveTo(cx, y0); g.lineTo(x0 + W, cy); g.lineTo(cx, y0 + H); g.lineTo(x0, cy); g.closePath(); }
         else if (k === 'spenta' || k === 'shex') {
           // düzgün çokgen, çizilen kutuyu dolduracak şekilde esnetilir
           const n = k === 'spenta' ? 5 : 6, a0 = k === 'spenta' ? -Math.PI / 2 : 0;
@@ -379,7 +574,7 @@
     },
 
     panel(body) {
-      const pick = v => { T.brush = v; App.updateCursor(); App.brushCursor = null; App.requestRender(); vis(); T.settingsChanged(); };
+      const pick = v => { if (T.curve) T.finishCurve(); T.brush = v; App.updateCursor(); App.brushCursor = null; App.requestRender(); vis(); T.settingsChanged(); };
       const bSeg = UI.seg({ label: 'Brushes', options: BRUSHES, value: T.brush, wrap: true, onChange: v => { sSeg.set(null); pick(v); } });
       const sSeg = UI.seg({ label: 'Shapes', options: SHAPE_LIST, value: T.brush, wrap: true, iconOnly: true, onChange: v => { bSeg.set(null); pick(v); } });
       body.appendChild(UI.section('Tool', [bSeg.el, sSeg.el]));
@@ -420,7 +615,7 @@
       ]);
       const tip = UI.note('');
       const vis = () => {
-        const b = T.brush, sh = SHAPES.has(b), box = BOXES.has(b);
+        const b = T.brush, sh = SHAPES.has(b), cv = b === CURVE, box = BOXES.has(b) || cv;
         const show = (el, on) => { el.style.display = on ? '' : 'none'; };
         show(c1.el, b !== 'eraser' && !sh);
         show(c1s.el, sh);
@@ -436,11 +631,13 @@
         show(dGap.el, sh && T.dashed);
         show(outline.el, box && T.fill);
         show(fill, box);
-        show(center.el, box);
+        show(center.el, box && !cv);
         show(layerSec, sh);
-        tip.textContent = App.t(sh
+        tip.textContent = App.t(cv
+          ? 'Click to add corner points; press and drag to add a curved point. Drag points and handles to adjust, click on the line to add a point, Alt + click a point to pull new handles. Click the first point to close the shape. Enter or double-click finishes, Esc cancels, Ctrl+Z removes the last point.'
+          : sh
           ? 'Shift gives a square/circle and straight angles. Alt temporarily inverts the "Draw from center" setting. Ctrl reverses snapping while held.'
-          : b === 'bucket' ? 'The area you click is filled with the selected color on a new layer.'
+          : b === 'bucket' ? 'The area you click is filled with the selected color. If a drawing layer is selected, the fill goes onto it; otherwise a new layer is added so the photo stays intact.'
             : b === 'neon' || b === 'marker' ? 'While Shift is held, the brush only goes straight horizontally, vertically or at 45 degrees. Alt + wheel changes the size.'
             : b === 'eraser' ? 'The eraser works on the selected layer. Alt + wheel changes the size.'
               : 'Brush strokes are collected on a separate drawing layer so the photo stays intact. Hold Shift to draw straight lines (in 45 degree steps). Alt + wheel changes the size.');
@@ -470,7 +667,13 @@
   // Renk, boyut, fırça türü gibi ayar değişiklikleri Ctrl+Z ile geri alınabilir
   UI.toolSettingsHist(T, ['brush', 'color', 'color2', 'size', 'opacity', 'mOpacity', 'hard', 'newLayer', 'fill', 'outline', 'dashed', 'dashLen', 'dashGap', 'radius', 'lineW', 'center', 'tol', 'density', 'dot', 'gradOn', 'grad', 'fillGradOn', 'fillGrad'],
     () => { App.updateCursor(); App.brushCursor = null; UI.rebuildPanel(); });
+  // yarım kalan eğride Ctrl+Z önce son noktayı siler, sonra ayar değişikliklerini geri alır
+  const setUndo = T.localUndo, setCan = T.canLocalUndo;
+  T.canLocalUndo = () => T.curveCanUndo() || setCan();
+  T.localUndo = () => T.curveUndo() || setUndo();
 
+  // başka bir değişiklik yapılınca vazgeçilen eğri geri getirilmez (Ctrl+Z o değişikliği geri alır)
+  App.on('changed', () => { T.curveGone = null; });
   App.on('prefs', k => { if (k === 'drawColor') { T.color = App.prefs.drawColor; if (App.tool === T) UI.rebuildPanel(); } });
   App.registerTool(T);
 })();
