@@ -1482,6 +1482,7 @@
       if (App.brushCursor) { App.brushCursor = null; App.requestRender(); }
       if (!dragging) App.clearSnap();
       hover = null;
+      if (App.tool && App.tool.onLeave) App.tool.onLeave();
     });
     st.addEventListener('dblclick', e => {
       const t = App.tool;

@@ -309,8 +309,11 @@
     cursor: 'default',
     hoverL: null,
 
-    activate() { T.refresh(); },
-    deactivate() { X.drag = null; T.pend = null; T.marq = null; },
+    // Üzerine gelinen nesne araç değişince ve imleç tuvalden çıkınca unutulur; yoksa başka araçtan dönüldüğünde
+    // (ör. metnin seçimi kalkınca) fare kıpırdayana kadar eski nesnenin çerçevesi görünüyordu
+    activate() { T.hoverL = null; T.refresh(); },
+    deactivate() { X.drag = null; T.pend = null; T.marq = null; T.hoverL = null; },
+    onLeave() { if (T.hoverL) { T.hoverL = null; App.requestRender(); } },
 
     onDown(p, e) {
       const L = App.activeLayer();
