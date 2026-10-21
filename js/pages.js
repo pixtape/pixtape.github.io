@@ -16,6 +16,8 @@
       desc: 'Add text to photos with dozens of fonts, ready-made templates, outlines, shadows and curved text. Free photo editor in your browser, no sign-up.' },
     { slug: 'collage-maker', title: 'Photo Collage Maker Online Free | Pixtape',
       desc: 'Make photo collages with 16 layouts in your browser. Adjust spacing, rounded corners and background, then save in high quality. Free, no watermark.' },
+    { slug: 'batch-photo-editor', title: 'Batch Photo Editor, Resize and Watermark Images | Pixtape',
+      desc: 'Edit many photos at once in your browser: resize, crop, adjust colors, add a watermark or border and save as JPG, PNG or WEBP. Free, no sign-up, no upload.' },
     { slug: 'gif-maker', title: 'GIF Maker, Make GIFs from Images or Video | Pixtape',
       desc: 'Make animated GIFs from images or video clips in your browser. Set speed, size and looping, save as GIF or MP4. Free, no sign-up, no watermark.' },
   ];

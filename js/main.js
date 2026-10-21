@@ -52,6 +52,7 @@
     'add-text-to-photo': { sub: 'Add Text to Your Photos', name: 'Add Text to Photo', icon: 'text', tool: 'text',
       note: 'Choose a photo, then add your own text or pick one of the ready-made templates.' },
     'collage-maker': { sub: 'Make Photo Collages for Free', open: () => App.collage.open() },
+    'batch-photo-editor': { sub: 'Edit Many Photos at Once', open: () => App.batch.open() },
     'gif-maker': { sub: 'Make GIFs from Images or Video', open: () => App.gif.open() },
   };
   const slugOf = () => location.pathname.split('/').filter(Boolean)[0] || '';
@@ -149,7 +150,7 @@
       h('div', { class: 'hn-group' },
         navBtn('cutout', 'Remove Background', () => App.openFeature('remove-background')),
         navBtn('collage', 'Collage', () => App.openFeature('collage-maker')),
-        navBtn('batch', 'Batch Editing', () => App.batch.open()),
+        navBtn('batch', 'Batch Editing', () => App.openFeature('batch-photo-editor')),
         navBtn('film', 'Make GIF', () => App.openFeature('gif-maker')),
         navBtn('compress', 'Compress Images', () => App.openFeature('compress-image'))),
       h('div', { class: 'spacer' }),
@@ -179,7 +180,7 @@
       big('folder', 'Open Image', 'JPG, PNG, WEBP, GIF, BMP, SVG, .pixtape', () => A.open(), true),
       big('filePlus', 'Create New', 'Blank Canvas or Preset Size', () => A.newDialog()),
       big('collage', 'Make Collage', '16 Different Layouts', () => App.openFeature('collage-maker')),
-      big('batch', 'Batch Editing', 'Process Many Photos at Once', () => App.batch.open()),
+      big('batch', 'Batch Editing', 'Process Many Photos at Once', () => App.openFeature('batch-photo-editor')),
       big('film', 'Make GIF', 'From Images or Video', () => App.openFeature('gif-maker')),
       big('compress', 'Compress Images', 'Shrink While Keeping Quality', () => App.openFeature('compress-image')));
     const drop = h('div', { class: 'home-drop' }, h('span', { html: App.icon('upload', 28) }), h('b', null, 'Drag and Drop a Photo Here'), h('span', null, 'If you drop several images, you can open each in its own tab or all in one project'));
