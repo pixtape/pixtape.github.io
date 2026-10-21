@@ -36,6 +36,21 @@
     ['Facebook Cover', 820, 312, 'Facebook cover'], ['Full HD', 1920, 1080, 'Full HD'], ['A4 Print', 2480, 3508, 'A4 print'],
   ];
 
+  /* Özellik sayfaları (ör. /compress-image/, scripts/build-pages.js ile index.html'den üretilir): aynı uygulama açılır,
+     ana sayfadaki alt başlık o özelliği söyler ve ilgili araç kendiliğinden başlar. run: hemen açılır;
+     tool / then: resim gerektirir, ilk resim açılınca bir kez çalışır. */
+  const LANDING = {
+    'remove-background': { sub: 'Remove Image Backgrounds for Free', tool: 'cutout', then: t => t.L && t.ai() },
+    'compress-image': { sub: 'Compress Images Without Losing Quality', run: () => App.compress.open() },
+    'resize-image': { sub: 'Resize Images to Any Size', then: () => App.actions.resizeDialog() },
+    'crop-image': { sub: 'Crop Photos in Your Browser', tool: 'crop' },
+    'add-text-to-photo': { sub: 'Add Text to Your Photos', tool: 'text' },
+    'collage-maker': { sub: 'Make Photo Collages for Free', run: () => App.collage.open() },
+    'gif-maker': { sub: 'Make GIFs from Images or Video', run: () => App.gif.open() },
+  };
+  const landing = LANDING[location.pathname.split('/').filter(Boolean)[0]] || null;
+  let landingPending = !!(landing && (landing.tool || landing.then));
+
   async function renderHome() {
     const root = document.getElementById('home');
     // Liste önce okunur, sonra sayfa tek seferde yeniden kurulur ve kaydırma konumu korunur (titreme olmaz)
@@ -88,7 +103,7 @@
       onclick: ev => UI.menu(ev.currentTarget, rest.map(e => ({ label: e.doc.name, icon: 'image', checked: e.doc === App.doc, noi18n: true, onClick: () => goTab(e) }))),
     }, h('span', null, '+' + rest.length)) : null;
     const hero = h('div', { class: 'home-hero' },
-      h('div', { class: 'home-brand' }, h('div', null, h('h1', null, 'Pixtape'), h('p', null, 'Easy Photo Editor'))),
+      h('div', { class: 'home-brand' }, h('div', null, h('h1', null, 'Pixtape'), h('p', null, landing ? landing.sub : 'Easy Photo Editor'))),
       open.length ? h('div', { class: 'home-open' },
         h('span', { class: 'note' }, App.t('Open Tabs ({0})', open.length)),
         h('div', { class: 'ho-list' }, shown.map(e => h('button', { class: 'ho-chip' + (e.doc === App.doc ? ' on' : ''), title: 'Back to Editing', onclick: () => goTab(e) },
@@ -1213,6 +1228,13 @@
         try { t.activate && await t.activate(); } catch (e) { console.error(e); }
         UI.rebuildPanel();
       }
+      if (landingPending) {
+        landingPending = false;
+        try {
+          if (landing.tool) await App.setTool(landing.tool);
+          if (landing.then) await landing.then(App.tool);
+        } catch (e) { UI.toast(e.message, 'error'); }
+      }
     });
     App.on('doc', () => { if (App.doc) document.title = App.doc.name + ' - Pixtape'; });
 
@@ -1247,8 +1269,10 @@
       ], { at: { x: e.clientX, y: e.clientY } });
     });
 
-    App.showHome();
+    await App.showHome();
     if (window.__splash) setTimeout(() => window.__splash(2), 30);
+    if (landing && landing.run) landing.run();
+    else if (landing && landing.tool === 'cutout' && App.tools.cutout.canPrefetch()) App.tools.cutout.preloadAI().catch(() => {});
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

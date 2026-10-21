@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="i18n-wait">
+<head>
+  <meta charset="utf-8">
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add Text to Photo Online Free | Pixtape</title>
+  <meta name="description" content="Add text to photos with dozens of fonts, ready-made templates, outlines, shadows and curved text. Free photo editor in your browser, no sign-up.">
+  <meta name="theme-color" content="#7c5cff">
+  <meta property="og:title" content="Add Text to Photo Online Free | Pixtape">
+  <meta property="og:description" content="Add text to photos with dozens of fonts, ready-made templates, outlines, shadows and curved text. Free photo editor in your browser, no sign-up.">
+  <meta property="og:image" content="https://pixtape.github.io/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:url" content="https://pixtape.github.io/add-text-to-photo/">
+  <link rel="canonical" href="https://pixtape.github.io/add-text-to-photo/">
+  <link rel="apple-touch-icon" href="assets/icon-512.png">
+  <!-- arama motorları ikonu ayrı bir dosyadan alır (gömülü data adresini kullanmaz); en az 48x48 olmalı -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/icon-512.png" type="image/png" sizes="512x512">
+  <meta property="og:site_name" content="Pixtape">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="at-home">
+  <div id="splash" data-noi18n>
+    <svg viewBox="0 0 48 48"><defs><linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#00c2ff"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="12" fill="url(#spg)"/><circle cx="24" cy="24" r="10" fill="none" stroke="#fff" stroke-width="3.2"/><circle cx="24" cy="24" r="3.6" fill="#fff"/></svg>
+    <b class="sp-name">Pixtape</b>
+    <span class="sp-tag"></span>
+    <div class="sp-bar"><i></i></div>
+    <span class="sp-msg"></span>
+  </div>
+  <script>
+  /* Açılış ekranı: dil dosyası henüz yüklenmediği için metinler burada. */
+  (function () {
+    var S = {
+      en: ['Easy Photo Editor', 'Loading interface…', 'Preparing tools…', 'Opening…'],
+      tr: ['Kolay Fotoğraf Düzenleyici', 'Arayüz yükleniyor…', 'Araçlar hazırlanıyor…', 'Açılıyor…'],
+      zh: ['简单易用的照片编辑器', '正在加载界面…', '正在准备工具…', '正在打开…'],
+      ru: ['Простой фоторедактор', 'Загрузка интерфейса…', 'Подготовка инструментов…', 'Открытие…']
+    };
+    var lang = 'en';
+    try { lang = localStorage.getItem('pixtape-lang') || 'en'; } catch (e) { }
+    var T = S[lang] || S.en, el = document.getElementById('splash'), bar = el.querySelector('i'), msg = el.querySelector('.sp-msg');
+    el.querySelector('.sp-tag').textContent = T[0];
+    msg.textContent = T[1];
+    var p = 0.04, target = 0.6;
+    var draw = function () { bar.style.width = (p * 240).toFixed(1) + 'px'; };
+    draw();
+    var tick = setInterval(function () { p += (target - p) * 0.06; draw(); }, 30);
+    var close = function () {
+      if (!el.parentNode) return;
+      clearInterval(tick); p = 1; draw(); msg.textContent = T[3];
+      setTimeout(function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 400); }, 160);
+    };
+    window.__splash = function (step) { if (step === 1) { target = 0.9; msg.textContent = T[2]; } else close(); };
+    setTimeout(close, 15000); // bir hata olursa ekran takılı kalmasın
+  })();
+  </script>
+  <div id="app">
+    <header id="topbar">
+      <button id="btnHome" class="brand" title="Home"><span class="logo logo-slot"></span><b>Pixtape</b></button>
+      <nav id="menubar"></nav>
+      <div class="spacer"></div>
+      <button id="btnHelp" class="icon-btn" title="Keyboard Shortcuts (?)"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg></button>
+      <button id="btnSettings" class="icon-btn" title="Settings"><span class="ico-slot" data-ico="settings"></span></button>
+      <button id="btnSave2" class="btn primary small" title="Save (Ctrl S)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Save</span></button>
+    </header>
+    <main id="workspace">
+      <nav id="toolbar"></nav>
+      <section id="stageWrap">
+        <div id="docTabs"></div>
+        <div id="stage"><canvas id="view"></canvas></div>
+        <footer id="bottombar">
+          <div class="bb-group">
+            <button id="btnZoomOut" class="icon-btn" title="Zoom Out (Ctrl -)"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/></svg></button>
+            <button id="zoomLabel" class="zoom-label" title="Zoom">100%</button>
+            <button id="btnZoomIn" class="icon-btn" title="Zoom in (Ctrl +)"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg></button>
+            <button id="btnFit" class="icon-btn" title="Fit to Screen (Ctrl 0)"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+            <span id="docInfo" class="bb-info"></span>
+            <span id="cursorPos" class="bb-info dim"></span>
+          </div>
+          <div class="bb-group">
+            <button id="btnCompare" class="btn small ghost" title="Hold to Show the Original (\)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M3 3h9v18H3z" fill="currentColor" opacity=".35" stroke="none"/></svg><span>Before / After</span></button>
+            <button id="btnGrid" class="icon-btn" title="Grid (G): composition lines; while on, objects snap to the lines. Right-click to adjust."><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></button>
+            <button id="btnSnap" class="icon-btn" title="Guides and snapping (on/off). Right-click for settings."><span class="ico-slot" data-ico="magnet"></span></button>
+            <button id="btnSpace" class="icon-btn" title="Handles: on = relative to object, off = relative to canvas. Right-click for settings."><span class="ico-slot" data-ico="axisLocal"></span></button>
+            <button id="btnFree" class="icon-btn" title="Fully free mode: no ratio lock, Shift does nothing. Right-click for settings."><span class="ico-slot" data-ico="free"></span></button>
+            <span class="bb-sep"></span>
+            <button id="btnRotStep" class="bb-drop" title="Angle step for rotating with Shift"></button>
+            <button id="btnRotSnap" class="icon-btn" title="Always rotate in angle steps, as if Shift were held. Hold Ctrl or Alt to rotate freely."><span class="ico-slot" data-ico="angle"></span></button>
+            <span class="bb-sep"></span>
+            <button id="btnUndo" class="icon-btn" title="Undo (Ctrl Z)" disabled><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+            <button id="btnRedo" class="icon-btn" title="Redo (Ctrl Y)" disabled><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+          </div>
+        </footer>
+      </section>
+      <div id="paneHold" hidden>
+        <aside id="toolpanel" class="rp-pane"></aside>
+        <div id="layersPane" class="rp-pane"><div id="layers"></div></div>
+        <div id="historyPane" class="rp-pane"><div id="historyList"></div></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="home"></div>
+  <div id="busy"><div class="busy-box"><div class="busy-msg">Processing…</div><div class="busy-bar"><i></i></div><div class="busy-pct" data-noi18n></div></div></div>
+  <div id="toasts"></div>
+  <div id="modals"></div>
+  <div id="dropOverlay"><div><svg class="ico" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><b>Drop the Photo</b></div></div>
+
+  <script src="js/core.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/imaging.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/tools/arrange.js"></script>
+  <script src="js/tools/crop.js"></script>
+  <script src="js/tools/cutout.js"></script>
+  <script src="js/tools/adjust.js"></script>
+  <script src="js/tools/effect.js"></script>
+  <script src="js/tools/filter.js"></script>
+  <script src="js/tools/retouch.js"></script>
+  <script src="js/tools/draw.js"></script>
+  <script src="js/tools/text.js"></script>
+  <script src="js/tools/element.js"></script>
+  <script src="js/features/groups.js"></script>
+  <script src="js/features/storage.js"></script>
+  <script src="js/features/export.js"></script>
+  <script src="js/features/collage.js"></script>
+  <script src="js/features/batch.js"></script>
+  <script src="js/features/layout.js"></script>
+  <script src="js/features/tabs.js"></script>
+  <script src="js/features/encoders.js"></script>
+  <script src="js/features/gif.js"></script>
+  <script src="js/features/compress.js"></script>
+  <script src="js/features/shortcuts.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
