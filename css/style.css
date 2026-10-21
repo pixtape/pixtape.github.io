@@ -686,6 +686,10 @@ html.no-motion .kbd-key.rec { animation: kbdrec 1s ease-in-out infinite !importa
 .hc-s { font-size: 12px; color: var(--text3); }
 .home-drop { margin: 16px 0 6px; border: 2px dashed var(--line2); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text2); }
 .home-drop b { color: var(--text); font-size: 14px; }
+/* özellik sayfasının resim seçme penceresi */
+.start-drop { margin: 0 0 12px; padding: 30px 22px; transition: border-color .15s, background-color .15s; }
+.start-drop.over { border-color: var(--accent); background: var(--panel2); }
+.start-drop .btn { margin-top: 10px; }
 .home-inner h2 { font-size: 16px; margin: 26px 0 12px; }
 .home-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .quick-size { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px 12px; }

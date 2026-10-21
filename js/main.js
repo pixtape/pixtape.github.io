@@ -36,20 +36,86 @@
     ['Facebook Cover', 820, 312, 'Facebook cover'], ['Full HD', 1920, 1080, 'Full HD'], ['A4 Print', 2480, 3508, 'A4 print'],
   ];
 
-  /* Özellik sayfaları (ör. /compress-image/, scripts/build-pages.js ile index.html'den üretilir): aynı uygulama açılır,
-     ana sayfadaki alt başlık o özelliği söyler ve ilgili araç kendiliğinden başlar. run: hemen açılır;
-     tool / then: resim gerektirir, ilk resim açılınca bir kez çalışır. */
-  const LANDING = {
-    'remove-background': { sub: 'Remove Image Backgrounds for Free', tool: 'cutout', then: t => t.L && t.ai() },
-    'compress-image': { sub: 'Compress Images Without Losing Quality', run: () => App.compress.open() },
-    'resize-image': { sub: 'Resize Images to Any Size', then: () => App.actions.resizeDialog() },
-    'crop-image': { sub: 'Crop Photos in Your Browser', tool: 'crop' },
-    'add-text-to-photo': { sub: 'Add Text to Your Photos', tool: 'text' },
-    'collage-maker': { sub: 'Make Photo Collages for Free', run: () => App.collage.open() },
-    'gif-maker': { sub: 'Make GIFs from Images or Video', run: () => App.gif.open() },
+  /* Özellik adresleri (js/pages.js): bir özelliğin penceresi açılınca adres (ör. /compress-image/) ve sekme başlığı
+     onunkine döner, kapanınca eski hâline; tarayıcının geri / ileri tuşları pencereyi kapatıp açar. O adresle
+     doğrudan gelinince pencere kendiliğinden açılır. open: kendi penceresi olan özellik. Resim gerektiren
+     özelliklerde (tool / then) önce resim seçme penceresi gelir; resim açılınca araç başlar. */
+  const HOME_TITLE = 'Pixtape - Easy Photo Editor';
+  const FEATURES = {
+    'remove-background': { sub: 'Remove Image Backgrounds for Free', name: 'Remove Background', icon: 'cutout', tool: 'cutout', then: t => t.L && t.ai(),
+      note: 'The background is removed automatically as soon as the photo opens. Your photo never leaves your device.' },
+    'compress-image': { sub: 'Compress Images Without Losing Quality', open: () => App.compress.open() },
+    'resize-image': { sub: 'Resize Images to Any Size', name: 'Resize Image', icon: 'scale', then: () => App.actions.resizeDialog(),
+      note: 'Choose a photo, then enter the new width and height or a percentage.' },
+    'crop-image': { sub: 'Crop Photos in Your Browser', name: 'Crop Image', icon: 'crop', tool: 'crop',
+      note: 'Choose a photo, then drag the frame or pick a ratio such as 1:1 or 16:9.' },
+    'add-text-to-photo': { sub: 'Add Text to Your Photos', name: 'Add Text to Photo', icon: 'text', tool: 'text',
+      note: 'Choose a photo, then add your own text or pick one of the ready-made templates.' },
+    'collage-maker': { sub: 'Make Photo Collages for Free', open: () => App.collage.open() },
+    'gif-maker': { sub: 'Make GIFs from Images or Video', open: () => App.gif.open() },
   };
-  const landing = LANDING[location.pathname.split('/').filter(Boolean)[0]] || null;
-  let landingPending = !!(landing && (landing.tool || landing.then));
+  const slugOf = () => location.pathname.split('/').filter(Boolean)[0] || '';
+  let feature = null;    // açık özellik penceresi: { slug, wrap, back, title }
+  let startWith = null;  // seçilen resim açılınca başlayacak özellik
+  const homeSub = () => FEATURES[slugOf()] ? FEATURES[slugOf()].sub : 'Easy Photo Editor';
+  const syncSub = () => { const p = document.querySelector('.home-brand p'); if (p) p.textContent = App.t(homeSub()); };
+
+  // Resim seçme penceresi: resim açılınca pencere kapanır ve özelliğin aracı başlar
+  const startDialog = F => {
+    let close = null;
+    const go = async fs => {
+      const f = fs && fs.find(x => !App.PROJECT_RE.test(x.name));
+      if (!f) return;
+      close(null);
+      startWith = F;
+      try { await App.actions.openFiles([f]); } finally { startWith = null; }
+      if (App.doc) App.showEditor();
+    };
+    const drop = h('div', { class: 'home-drop start-drop' },
+      h('span', { html: App.icon('upload', 28) }), h('b', null, 'Drag and Drop a Photo Here'),
+      UI.button('Open Image', async () => go(await App.actions.pickFile('image/*')), { primary: true, icon: 'folder' }));
+    drop.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); drop.classList.add('over'); } });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', e => { drop.classList.remove('over'); if (!e.dataTransfer.files.length) return; e.preventDefault(); e.stopPropagation(); go([...e.dataTransfer.files]); });
+    UI.modal({ title: F.name, width: 460, content: h('div', null, drop, UI.note(F.note)), onOpen: (box, c) => { close = c; } });
+    if (F.tool === 'cutout' && App.tools.cutout.canPrefetch()) App.tools.cutout.preloadAI().catch(() => {});
+  };
+
+  App.openFeature = (slug, push = true) => {
+    const F = FEATURES[slug];
+    if (!F) return;
+    const root = document.getElementById('modals'), before = new Set(root.children);
+    if (F.open) F.open(); else startDialog(F);
+    const wrap = [...root.children].find(w => !before.has(w));
+    if (!wrap) return;
+    const here = slugOf() === slug;
+    if (push && !here) history.pushState({ feature: slug }, '', '/' + slug + '/');
+    // back: önceki adres geçmişte duruyor (geri gidilir); yoksa (doğrudan gelindiyse) adres ana sayfayla değiştirilir
+    feature = { slug, wrap, back: !here || !!(history.state && history.state.feature === slug), title: here ? HOME_TITLE : document.title };
+    const P = App.PAGES.find(p => p.slug === slug);
+    if (P) document.title = P.title;
+    syncSub();
+  };
+  // pencere nasıl kapanırsa kapansın (Kapat, Esc, Düzenleyicide Aç...) adres ve başlık geri döner
+  const featureClosed = () => {
+    const F = feature;
+    feature = null;
+    if (slugOf() === F.slug) { if (F.back) history.back(); else history.replaceState(null, '', '/'); }
+    if (document.title === (App.PAGES.find(p => p.slug === F.slug) || {}).title) document.title = F.title;
+    syncSub();
+  };
+  window.addEventListener('popstate', () => {
+    const s = slugOf();
+    if (feature && feature.slug !== s) {
+      const F = feature;
+      feature = null;
+      const x = F.wrap.querySelector('.modal-head .icon-btn');
+      if (x) x.click(); else F.wrap.remove();
+      if (document.title === (App.PAGES.find(p => p.slug === F.slug) || {}).title) document.title = F.title;
+    }
+    if (!feature && FEATURES[s] && document.body.classList.contains('at-home')) App.openFeature(s, false);
+    syncSub();
+  });
 
   async function renderHome() {
     const root = document.getElementById('home');
@@ -81,10 +147,11 @@
         navBtn('filePlus', 'Create New', () => A.newDialog())),
       h('div', { class: 'hn-label' }, 'Tools'),
       h('div', { class: 'hn-group' },
-        navBtn('collage', 'Collage', () => App.collage.open()),
+        navBtn('cutout', 'Remove Background', () => App.openFeature('remove-background')),
+        navBtn('collage', 'Collage', () => App.openFeature('collage-maker')),
         navBtn('batch', 'Batch Editing', () => App.batch.open()),
-        navBtn('film', 'Make GIF', () => App.gif.open()),
-        navBtn('compress', 'Compress Images', () => App.compress.open())),
+        navBtn('film', 'Make GIF', () => App.openFeature('gif-maker')),
+        navBtn('compress', 'Compress Images', () => App.openFeature('compress-image'))),
       h('div', { class: 'spacer' }),
       h('div', { class: 'hn-group' },
         langBtn,
@@ -103,7 +170,7 @@
       onclick: ev => UI.menu(ev.currentTarget, rest.map(e => ({ label: e.doc.name, icon: 'image', checked: e.doc === App.doc, noi18n: true, onClick: () => goTab(e) }))),
     }, h('span', null, '+' + rest.length)) : null;
     const hero = h('div', { class: 'home-hero' },
-      h('div', { class: 'home-brand' }, h('div', null, h('h1', null, 'Pixtape'), h('p', null, landing ? landing.sub : 'Easy Photo Editor'))),
+      h('div', { class: 'home-brand' }, h('div', null, h('h1', null, 'Pixtape'), h('p', null, homeSub()))),
       open.length ? h('div', { class: 'home-open' },
         h('span', { class: 'note' }, App.t('Open Tabs ({0})', open.length)),
         h('div', { class: 'ho-list' }, shown.map(e => h('button', { class: 'ho-chip' + (e.doc === App.doc ? ' on' : ''), title: 'Back to Editing', onclick: () => goTab(e) },
@@ -111,10 +178,10 @@
     const cards = h('div', { class: 'home-cards' },
       big('folder', 'Open Image', 'JPG, PNG, WEBP, GIF, BMP, SVG, .pixtape', () => A.open(), true),
       big('filePlus', 'Create New', 'Blank Canvas or Preset Size', () => A.newDialog()),
-      big('collage', 'Make Collage', '16 Different Layouts', () => App.collage.open()),
+      big('collage', 'Make Collage', '16 Different Layouts', () => App.openFeature('collage-maker')),
       big('batch', 'Batch Editing', 'Process Many Photos at Once', () => App.batch.open()),
-      big('film', 'Make GIF', 'From Images or Video', () => App.gif.open()),
-      big('compress', 'Compress Images', 'Shrink While Keeping Quality', () => App.compress.open()));
+      big('film', 'Make GIF', 'From Images or Video', () => App.openFeature('gif-maker')),
+      big('compress', 'Compress Images', 'Shrink While Keeping Quality', () => App.openFeature('compress-image')));
     const drop = h('div', { class: 'home-drop' }, h('span', { html: App.icon('upload', 28) }), h('b', null, 'Drag and Drop a Photo Here'), h('span', null, 'If you drop several images, you can open each in its own tab or all in one project'));
     const quick = h('div', { class: 'home-quick' }, QUICK.map(([n, w, hh, en]) => {
       const r = w / hh, bw = r >= 1 ? 54 : 54 * r, bh = r >= 1 ? 54 / r : 54;
@@ -1219,6 +1286,8 @@
     cmp.addEventListener('pointerdown', on); cmp.addEventListener('pointerup', off); cmp.addEventListener('pointerleave', off);
 
     App.on('docopen', async () => {
+      const F = startWith;
+      startWith = null;
       document.title = App.doc.name + ' - Pixtape';
       const t = App.tool;
       if (!t) await App.setTool('arrange');
@@ -1228,11 +1297,10 @@
         try { t.activate && await t.activate(); } catch (e) { console.error(e); }
         UI.rebuildPanel();
       }
-      if (landingPending) {
-        landingPending = false;
+      if (F) {
         try {
-          if (landing.tool) await App.setTool(landing.tool);
-          if (landing.then) await landing.then(App.tool);
+          if (F.tool) await App.setTool(F.tool);
+          if (F.then) await F.then(App.tool);
         } catch (e) { UI.toast(e.message, 'error'); }
       }
     });
@@ -1271,8 +1339,8 @@
 
     await App.showHome();
     if (window.__splash) setTimeout(() => window.__splash(2), 30);
-    if (landing && landing.run) landing.run();
-    else if (landing && landing.tool === 'cutout' && App.tools.cutout.canPrefetch()) App.tools.cutout.preloadAI().catch(() => {});
+    new MutationObserver(() => { if (feature && !feature.wrap.isConnected) featureClosed(); }).observe($('modals'), { childList: true });
+    if (FEATURES[slugOf()]) App.openFeature(slugOf(), false);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
