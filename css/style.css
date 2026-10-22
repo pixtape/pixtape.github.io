@@ -654,6 +654,8 @@ html.no-motion .kbd-key.rec { animation: kbdrec 1s ease-in-out infinite !importa
 .hn-group { display: flex; flex-direction: column; gap: 2px; }
 .hn-item { display: flex; align-items: center; gap: 11px; width: 100%; background: none; border: 0; border-radius: 9px; padding: 9px 10px; color: var(--text2); text-align: left; font-size: 13.5px; }
 .hn-item:hover { background: var(--panel2); color: var(--text); }
+a.hn-item, a.home-card { text-decoration: none; cursor: pointer; }
+a.home-card { color: inherit; }
 .hn-item .ico { color: var(--text3); }
 .hn-item:hover .ico { color: var(--accent); }
 .home-nav .spacer { flex: 1; min-height: 16px; }

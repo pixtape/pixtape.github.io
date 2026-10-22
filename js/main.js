@@ -125,14 +125,17 @@
     const oldMain = root.querySelector('.home-main'), keepScroll = oldMain ? oldMain.scrollTop : 0;
     root.innerHTML = '';
     const A = App.actions, I = App.i18n;
+    // Özellik kartları ve satırları gerçek bağlantıdır (href): arama motorları özellik sayfalarını buradan bulur,
+    // orta tıkla yeni sekmede de açılır. Normal tıklamada sayfa yenilenmez, özellik penceresi açılır.
+    const link = (cls, slug) => h('a', { class: cls, href: '/' + slug + '/', draggable: 'false', onclick: e => { e.preventDefault(); App.openFeature(slug); } });
     const big = (icon, title, sub, fn, primary) => {
-      const b = h('button', { class: 'home-card' + (primary ? ' primary' : ''), onclick: fn });
+      const b = typeof fn === 'string' ? link('home-card', fn) : h('button', { class: 'home-card' + (primary ? ' primary' : ''), onclick: fn });
       b.innerHTML = `<span class="hc-ico">${App.icon(icon, 26)}</span><span class="hc-t">${title}</span><span class="hc-s">${sub}</span>`;
       return b;
     };
     // Sol gezinme çubuğu
     const navBtn = (icon, label, fn, cls) => {
-      const b = h('button', { class: 'hn-item' + (cls ? ' ' + cls : ''), onclick: fn });
+      const b = typeof fn === 'string' ? link('hn-item', fn) : h('button', { class: 'hn-item' + (cls ? ' ' + cls : ''), onclick: fn });
       b.innerHTML = (icon === 'heart' ? App.heartIcon(18) : App.icon(icon, 18)) + `<span>${label}</span>`;
       return b;
     };
@@ -148,11 +151,11 @@
         navBtn('filePlus', 'Create New', () => A.newDialog())),
       h('div', { class: 'hn-label' }, 'Tools'),
       h('div', { class: 'hn-group' },
-        navBtn('cutout', 'Remove Background', () => App.openFeature('remove-background')),
-        navBtn('collage', 'Collage', () => App.openFeature('collage-maker')),
-        navBtn('batch', 'Batch Editing', () => App.openFeature('batch-photo-editor')),
-        navBtn('film', 'Make GIF', () => App.openFeature('gif-maker')),
-        navBtn('compress', 'Compress Images', () => App.openFeature('compress-image'))),
+        navBtn('cutout', 'Remove Background', 'remove-background'),
+        navBtn('collage', 'Collage', 'collage-maker'),
+        navBtn('batch', 'Batch Editing', 'batch-photo-editor'),
+        navBtn('film', 'Make GIF', 'gif-maker'),
+        navBtn('compress', 'Compress Images', 'compress-image')),
       h('div', { class: 'spacer' }),
       h('div', { class: 'hn-group' },
         langBtn,
@@ -179,10 +182,10 @@
     const cards = h('div', { class: 'home-cards' },
       big('folder', 'Open Image', 'JPG, PNG, WEBP, GIF, BMP, SVG, .pixtape', () => A.open(), true),
       big('filePlus', 'Create New', 'Blank Canvas or Preset Size', () => A.newDialog()),
-      big('collage', 'Make Collage', '16 Different Layouts', () => App.openFeature('collage-maker')),
-      big('batch', 'Batch Editing', 'Process Many Photos at Once', () => App.openFeature('batch-photo-editor')),
-      big('film', 'Make GIF', 'From Images or Video', () => App.openFeature('gif-maker')),
-      big('compress', 'Compress Images', 'Shrink While Keeping Quality', () => App.openFeature('compress-image')));
+      big('collage', 'Make Collage', '16 Different Layouts', 'collage-maker'),
+      big('batch', 'Batch Editing', 'Process Many Photos at Once', 'batch-photo-editor'),
+      big('film', 'Make GIF', 'From Images or Video', 'gif-maker'),
+      big('compress', 'Compress Images', 'Shrink While Keeping Quality', 'compress-image'));
     const drop = h('div', { class: 'home-drop' }, h('span', { html: App.icon('upload', 28) }), h('b', null, 'Drag and Drop a Photo Here'), h('span', null, 'If you drop several images, you can open each in its own tab or all in one project'));
     const quick = h('div', { class: 'home-quick' }, QUICK.map(([n, w, hh, en]) => {
       const r = w / hh, bw = r >= 1 ? 54 : 54 * r, bh = r >= 1 ? 54 / r : 54;
