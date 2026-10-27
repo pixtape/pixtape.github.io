@@ -1412,6 +1412,10 @@
         return;
       }
       if (e.button !== 0) return;
+      // Paneldeki kutuya yazılıp Enter'a basılmadan tuvale tıklanırsa değer önce işlenir (odak kalkınca "change"
+      // gelir); yoksa sürükleme eski değerden başlıyor ve kutu eski değere dönüyordu (ör. kırpma genişliği)
+      const ae = document.activeElement;
+      if (ae && ae.matches && ae.matches('input, select')) ae.blur();
       const t = App.tool;
       if (t && t.onDown) {
         dragging = App.pointerDown = true;

@@ -132,6 +132,7 @@
   const X = App.xform = {
     drag: null,
     inside,
+    pickAt,
     // Tutamaç yakalandıysa sürüklemeyi başlatır
     grab(L, p) {
       if (!L || !L.visible || L.locked) return false;

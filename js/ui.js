@@ -208,59 +208,106 @@
 
   /* Ekrandan renk seçme: pencerenin görüntüsü alınır, bütün arayüz devre dışı kalır ve imlecin yerinde
      yakınlaştırılmış yuvarlak bir büyüteç görünür. Tıklanan yerin rengi döner ({ hex, x, y }); Esc ya da sağ tık iptal eder (null).
-     Programın kendi arayüzünden (düğmeler, paneller) de renk alınabilir. */
+     Tarayıcı sayfanın görüntüsünü vermediği için renk yalnızca resim alanından alınır: arayüzün (düğmeler, paneller,
+     açık pencereler) üstünde büyüteç gizlenir, imleç artı işareti olur; oraya tıklamak Esc gibi iptal eder. */
   UI.eyedropping = false;
   App.eyedropper = async () => {
     if (UI.eyedropping) return null;
     UI.eyedropping = true;
-    const dpr = window.devicePixelRatio || 1;
-    // tarayıcıda sayfanın görüntüsü alınamaz: renk resim alanından alınır
-    const shot = U.canvas(innerWidth * dpr, innerHeight * dpr);
+    // Tarayıcıda sayfanın görüntüsü alınamaz: görüntüye yalnızca resim alanı çizilir. Damlalık açıkken pencere boyutu
+    // ya da sayfa yakınlaştırması değişirse yeniden hazırlanır.
     const v = App.R && App.R.canvas;
-    if (v && v.getClientRects().length) { const r = v.getBoundingClientRect(); shot.getContext('2d').drawImage(v, r.left * dpr, r.top * dpr, r.width * dpr, r.height * dpr); }
-    const k = shot.width / innerWidth, sx = shot.getContext('2d', { willReadFrequently: true });
+    let dpr, shot, sx, k;
+    const capture = () => {
+      dpr = window.devicePixelRatio || 1;
+      shot = U.canvas(Math.max(1, Math.round(innerWidth * dpr)), Math.max(1, Math.round(innerHeight * dpr)));
+      sx = shot.getContext('2d', { willReadFrequently: true });
+      if (v && v.getClientRects().length) { const r = v.getBoundingClientRect(); sx.drawImage(v, r.left * dpr, r.top * dpr, r.width * dpr, r.height * dpr); }
+      k = shot.width / innerWidth;
+    };
+    capture();
     // büyütme: büyüteçte görünen piksel sayısı (tekerlek ya da + / - ile değişir; az piksel = daha yakın)
-    const LEVELS = [41, 29, 21, 15, 11, 7, 5];
-    let li = Math.min(LEVELS.length - 1, Math.max(0, +(App.prefs.loupeLevel ?? 3) || 0)), N = LEVELS[li], half = (N - 1) / 2;
+    // (en uzakta bir piksel yaklaşık 2 px görünür). Ayar piksel sayısı olarak saklanır; eski sürüm sıra numarası saklıyordu.
+    const LEVELS = [73, 57, 41, 29, 21, 15, 11, 7, 5];
+    const savedN = +App.prefs.loupeN || [41, 29, 21, 15, 11, 7, 5][+(App.prefs.loupeLevel ?? 3)] || 15;
+    let li = LEVELS.indexOf(savedN);
+    if (li < 0) li = LEVELS.indexOf(15);
+    let N = LEVELS[li], half = (N - 1) / 2;
     const SZ = 148;
     const lc = h('canvas', { width: Math.round(SZ * dpr), height: Math.round(SZ * dpr), style: { width: SZ + 'px', height: SZ + 'px' } });
     const sw = h('i'), hexEl = h('b', { 'data-noi18n': '' }), zEl = h('span', { class: 'ed-zoom', 'data-noi18n': '' });
     const loupe = h('div', { class: 'ed-loupe' }, lc, h('div', { class: 'ed-lab' }, sw, hexEl, zEl));
     const ov = h('div', { class: 'eyedrop' }, loupe, h('div', { class: 'ed-hint' }, 'Click where you want to take the color from. Wheel or + / -: zoom, arrow keys: move one pixel, Enter: pick, Esc: cancel'));
     document.body.appendChild(ov);
+    // imlecin altında resim alanı mı var (üstünde bir pencere ya da panel yoksa)
+    const overCanvas = (cx, cy) => !!v && document.elementsFromPoint(cx, cy).find(e => !ov.contains(e)) === v;
     const colorAt = (cx, cy) => {
+      fresh();
       const px = Math.floor(cx * k), py = Math.floor(cy * k);
-      if (px < 0 || py < 0 || px >= shot.width || py >= shot.height) return null;
+      if (!(px >= 0 && py >= 0 && px < shot.width && py < shot.height)) return null;
       const d = sx.getImageData(px, py, 1, 1).data;
       return d[3] < 10 ? null : U.rgb2hex(d[0], d[1], d[2]);
     };
     let cur = null;
+    // pencere boyutu ya da yakınlaştırma değiştiyse görüntü yeniden hazırlanır ("resize" olayı gelmese de)
+    const fresh = () => {
+      const d = window.devicePixelRatio || 1;
+      if (d === dpr && Math.max(1, Math.round(innerWidth * d)) === shot.width && Math.max(1, Math.round(innerHeight * d)) === shot.height) return;
+      capture();
+      lc.width = lc.height = Math.round(SZ * dpr);
+    };
     const draw = (cx, cy) => {
+      fresh();
       cur = { x: cx, y: cy };
       zEl.textContent = Math.round(SZ / N) + '×';
       loupe.style.transform = `translate(${cx - SZ / 2}px, ${cy - SZ / 2}px)`;
       const x = lc.getContext('2d'), W = lc.width, cell = W / N;
       x.imageSmoothingEnabled = false;
       x.fillStyle = '#2a2c33'; x.fillRect(0, 0, W, W);
+      const ui = !overCanvas(cx, cy);
+      loupe.classList.toggle('ui', ui);
+      ov.style.cursor = ui ? 'crosshair' : '';
       x.drawImage(shot, Math.floor(cx * k) - half, Math.floor(cy * k) - half, N, N, 0, 0, W, W);
-      x.strokeStyle = 'rgba(0,0,0,.18)'; x.lineWidth = 1;
-      x.beginPath();
-      for (let i = 1; i < N; i++) { const p = Math.round(i * cell) + 0.5; x.moveTo(p, 0); x.lineTo(p, W); x.moveTo(0, p); x.lineTo(W, p); }
-      x.stroke();
-      const c0 = Math.round(half * cell);
-      x.lineWidth = 2 * dpr; x.strokeStyle = '#000'; x.strokeRect(c0, c0, Math.round(cell), Math.round(cell));
-      x.lineWidth = 1 * dpr; x.strokeStyle = '#fff'; x.strokeRect(c0 + dpr, c0 + dpr, Math.round(cell) - 2 * dpr, Math.round(cell) - 2 * dpr);
+      // ızgara, pikseller ayırt edilecek kadar büyükken çizilir (çok uzaktayken görüntüyü karartıyordu)
+      if (cell >= 5 * dpr) {
+        x.strokeStyle = 'rgba(0,0,0,.18)'; x.lineWidth = 1;
+        x.beginPath();
+        for (let i = 1; i < N; i++) { const p = Math.round(i * cell) + 0.5; x.moveTo(p, 0); x.lineTo(p, W); x.moveTo(0, p); x.lineTo(W, p); }
+        x.stroke();
+      }
+      // ortadaki pikselin çerçevesi; piksel küçükken çerçeve onu örtmesin diye etrafında durur
+      const m = Math.max(Math.round(cell), Math.round(8 * dpr)), c0 = Math.round(half * cell + cell / 2 - m / 2);
+      x.lineWidth = 2 * dpr; x.strokeStyle = '#000'; x.strokeRect(c0, c0, m, m);
+      x.lineWidth = 1 * dpr; x.strokeStyle = '#fff'; x.strokeRect(c0 + dpr, c0 + dpr, m - 2 * dpr, m - 2 * dpr);
       const c = colorAt(cx, cy);
       sw.style.background = c || 'transparent';
       hexEl.textContent = c ? c.toUpperCase() : App.t('No Color');
-      loupe.style.borderColor = c || '';
+      loupe.style.setProperty('--ring', c || '#fff');
+      // renk etiketi ekran kenarında yarım kalmasın
+      const lab = sw.parentNode;
+      lab.style.marginLeft = '';
+      const lr = lab.getBoundingClientRect();
+      if (lr.left < 6) lab.style.marginLeft = (6 - lr.left) + 'px';
+      else if (lr.right > innerWidth - 6) lab.style.marginLeft = (innerWidth - 6 - lr.right) + 'px';
     };
     return new Promise(resolve => {
       let done = false;
+      // resim alanı da yeniden çizilsin diye biraz beklenir
+      let resizeT = 0;
+      const onResize = () => {
+        clearTimeout(resizeT);
+        resizeT = setTimeout(() => {
+          capture();
+          lc.width = lc.height = Math.round(SZ * dpr);
+          if (cur) draw(Math.min(cur.x, innerWidth - 1), Math.min(cur.y, innerHeight - 1));
+        }, 200);
+      };
       const finish = v => {
         if (done) return;
         done = true;
         window.removeEventListener('keydown', key, true);
+        window.removeEventListener('resize', onResize);
+        clearTimeout(resizeT);
         window.removeEventListener('keyup', swallow, true);
         setTimeout(() => { ov.remove(); UI.eyedropping = false; }, 40);
         resolve(v);
@@ -270,13 +317,13 @@
         const n = U.clamp(li + dir, 0, LEVELS.length - 1);
         if (n === li) return;
         li = n; N = LEVELS[li]; half = (N - 1) / 2;
-        App.setPref('loupeLevel', li);
+        App.setPref('loupeN', N);
         if (cur) draw(cur.x, cur.y);
       };
       const pick = (x, y) => {
-        const c = colorAt(x, y);
-        if (!c) { UI.toast('No color can be picked here', 'warn', 1500); return; }
-        finish({ hex: c, x, y });
+        // renk alınamayan yere (arayüz, boş alan) tıklamak Esc gibi iptal eder
+        const c = overCanvas(x, y) ? colorAt(x, y) : null;
+        finish(c ? { hex: c, x, y } : null);
       };
       const key = e => {
         swallow(e);
@@ -292,6 +339,7 @@
         }
       };
       window.addEventListener('keydown', key, true);
+      window.addEventListener('resize', onResize);
       window.addEventListener('keyup', swallow, true);
       ov.addEventListener('pointermove', e => draw(e.clientX, e.clientY));
       ov.addEventListener('pointerdown', e => {
@@ -1138,11 +1186,12 @@
     ];
     const addBtn = UI.iconBtn('plus', 'Add Layer', e => UI.menu(e.currentTarget, addItems(), { up: true }));
     // Listenin boş yerine sağ tık: katman ekleme menüsü; sol tık: seçimi kaldır
-    list.addEventListener('contextmenu', e => {
+    list.addEventListener('contextmenu', async e => {
       if (e.target.closest('.ly-row') || !App.doc) return;
       e.preventDefault();
+      const paste = await App.actions.pasteState();
       UI.menu(null, [{ header: 'New Layer' }, ...addItems(), '-',
-        { label: 'Paste', icon: 'clipboard', key: 'Ctrl+V', onClick: () => App.actions.pasteFromClipboard() },
+        { label: 'Paste', icon: 'clipboard', key: 'Ctrl+V', disabled: paste === false, onClick: () => App.actions.pasteFromClipboard() },
         { label: 'Merge Visible', icon: 'merge', key: K('mergeVisible'), onClick: () => App.actions.mergeVisible() },
       ], { at: { x: e.clientX, y: e.clientY } });
     });
@@ -1376,7 +1425,7 @@
         { label: 'Redo', icon: 'redo', key: K('redo'), disabled: !App.history.canRedo(), onClick: () => App.history.redo() },
         '-',
         { label: 'Copy Layer', icon: 'copy', key: K('copyLayer'), onClick: () => A().copyLayer() },
-        { label: 'Paste', icon: 'clipboard', key: 'Ctrl+V', onClick: () => A().pasteFromClipboard() },
+        { label: 'Paste', icon: 'clipboard', key: 'Ctrl+V', disabled: App.clipState === false, onClick: () => A().pasteFromClipboard() },
         { label: 'Duplicate', icon: 'duplicate', key: K('duplicate'), onClick: () => A().duplicate() },
         { label: 'Delete Layer', icon: 'trash', key: K('deleteLayer'), onClick: () => A().deleteLayer() },
         '-',

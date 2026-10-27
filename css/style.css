@@ -1020,8 +1020,11 @@ kbd { background: var(--panel3); border: 1px solid var(--line2); border-bottom-w
 /* ---------------------------------------------------------------- 1.4 eklemeleri */
 /* ekrandan renk seçme: büyüteç */
 .eyedrop { position: fixed; inset: 0; z-index: 5000; cursor: none; }
-.ed-loupe { position: fixed; left: 0; top: 0; width: 148px; height: 148px; pointer-events: none; will-change: transform; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 8px 26px rgba(0,0,0,.45); }
+/* çerçeve kenarlık değil gölge halkası: kenarlık içeriği 4 px kaydırıyor, büyütülen görüntü imlecin tam altında durmuyordu */
+.ed-loupe { position: fixed; left: 0; top: 0; width: 148px; height: 148px; pointer-events: none; will-change: transform; border-radius: 50%; box-shadow: 0 0 0 4px var(--ring, #fff), 0 0 0 5px rgba(0,0,0,.6), 0 8px 26px rgba(0,0,0,.45); }
 .ed-loupe canvas { display: block; border-radius: 50%; }
+/* arayüzün üstünde renk alınmaz: büyüteç gizlenir, imleç artı işareti olur */
+.ed-loupe.ui { visibility: hidden; }
 .ed-lab { position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 4px 9px 4px 5px; border-radius: 12px; background: rgba(20,22,28,.92); color: #fff; font-size: 12px; white-space: nowrap; box-shadow: 0 3px 10px rgba(0,0,0,.4); }
 .ed-lab .ed-zoom { opacity: .6; margin-left: 2px; }
 .ed-lab i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,.7); }

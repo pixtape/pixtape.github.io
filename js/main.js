@@ -514,6 +514,26 @@
     },
     // Panodaki içerik bizim kopyaladığımız katman mı? (sistem panosuna yazılamadıysa dahili pano geçerlidir)
     ownClip(text) { return !!(App._clip && App.doc && (!App._clipSys || (text && text.trim() === App._clipMark))); },
+    /* Menüdeki Yapıştır düğmesi için: panoda yapıştırılabilir bir şey var mı. Kopyalanmış bir katman her zaman
+       yapıştırılabilir. Panoyu okuma izni verilmişse panoda resim olup olmadığına bakılır; izin reddedildiyse
+       yapıştırılacak bir şey yoktur. İzin henüz sorulmadıysa ya da tarayıcı bunu desteklemiyorsa bilinemez (null):
+       düğme açık kalır, tıklayınca izin istenir. Sonuç App.clipState'te saklanır (Düzen menüsü bunu kullanır). */
+    async canPaste() {
+      let r = null;
+      if (App._clip && App.doc) r = true;
+      else {
+        let st = null;
+        try { st = (await navigator.permissions.query({ name: 'clipboard-read' })).state; } catch (e) { /* desteklenmiyor */ }
+        if (st === 'denied') r = false;
+        else if (st === 'granted') {
+          try { r = (await navigator.clipboard.read()).some(it => it.types.some(t => t.startsWith('image/'))); } catch (e) { r = null; }
+        }
+      }
+      App.clipState = r;
+      return r;
+    },
+    // menü açılmadan önce pano kısa bir süre beklenir (okuma uzun sürerse düğme açık kalır)
+    pasteState() { return Promise.race([A.canPaste(), new Promise(r => setTimeout(() => r(null), 250))]); },
     async pasteFromClipboard() {
       let text = '';
       try {
@@ -1322,25 +1342,35 @@
     });
 
     // Tuvalde sağ tık: katman menüsü
-    App.on('stagemenu', (p, e) => {
+    App.on('stagemenu', async (p, e) => {
       const t = App.tool;
+      // Sağ tık sol tıkla aynı nesneyi seçer (tutamaç kutusuna göre, saydam yerler de sayılır). Seçili nesnenin
+      // kutusunun içindeyse seçim değişmez; boş yere (arka plana) sağ tıklamak da seçili nesneyi bırakmaz.
       if (t && ['arrange', 'text', 'element'].includes(t.id)) {
-        const L = App.hitLayer(p.x, p.y);
-        if (L && L.id !== App.doc.active) { if (UI.isMultiSelected(L.id)) UI.selectLayerKeep(L.id); else App.setActive(L.id); }
+        const A0 = App.activeLayer();
+        if (!(A0 && A0.visible && App.xform.inside(A0, p))) {
+          const L = App.xform.pickAt(p);
+          if (L && L.id !== App.doc.active && !(A0 && App.isBackdrop(L))) { if (UI.isMultiSelected(L.id)) UI.selectLayerKeep(L.id); else App.setActive(L.id); }
+        }
       }
       const L = App.activeLayer();
+      const paste = await A.pasteState();
       UI.menu(null, [
         { label: 'Undo', icon: 'undo', key: K('undo'), disabled: !App.history.canUndo(), onClick: () => App.history.undo() },
         { label: 'Redo', icon: 'redo', key: K('redo'), disabled: !App.history.canRedo(), onClick: () => App.history.redo() },
         '-',
         { label: 'Copy Layer', icon: 'copy', key: K('copyLayer'), disabled: !L, onClick: () => A.copyLayer() },
-        { label: 'Paste', icon: 'clipboard', key: 'Ctrl+V', onClick: () => A.pasteFromClipboard() },
+        { label: 'Paste', icon: 'clipboard', key: 'Ctrl+V', disabled: paste === false, onClick: () => A.pasteFromClipboard() },
         { label: 'Center on Canvas', icon: 'center', disabled: !L || L.locked, onClick: () => { L.x = App.doc.w / 2; L.y = App.doc.h / 2; App.commit('Align'); if (App.tool && App.tool.refreshFields) App.tool.refreshFields(); } },
         '-',
         ...UI.layerMenuItems(L),
       ], { at: { x: e.clientX, y: e.clientY } });
     });
 
+    // Düzen menüsündeki Yapıştır düğmesi için pano durumu (izin verilmişse sessizce okunur) güncel tutulur
+    A.canPaste();
+    window.addEventListener('focus', () => A.canPaste());
+    for (const ev of ['copy', 'cut']) document.addEventListener(ev, () => setTimeout(() => A.canPaste(), 100));
     await App.showHome();
     if (window.__splash) setTimeout(() => window.__splash(2), 30);
     new MutationObserver(() => { if (feature && !feature.wrap.isConnected) featureClosed(); }).observe($('modals'), { childList: true });
